@@ -1,0 +1,75 @@
+# Backend .gitignore
+
+# Python 虚拟环境
+venv/
+env/
+ENV/
+*.env
+
+# Python 编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+
+# 包分发文件
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# 单元测试 / 覆盖率
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 数据库文件（除了示例）
+girlatlas.db
+*.db
+*.sqlite
+*.sqlite3
+
+# 上传/缓存目录
+app/uploads/
+app/cache/
+app/static/
+
+# 日志
+*.log
+logs/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# IDE 配置
+.vscode/
+.idea/
+
+# 临时文件
+*.tmp
+*.temp
+*~

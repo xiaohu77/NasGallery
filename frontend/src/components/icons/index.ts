@@ -1,0 +1,8 @@
+export { default as HomeIcon } from './HomeIcon'
+export { default as SunIcon } from './SunIcon'
+export { default as MoonIcon } from './MoonIcon'
+export { default as ArrowLeftIcon } from './ArrowLeftIcon'
+export { default as CloseIcon } from './CloseIcon'
+export { default as MaximizeIcon } from './MaximizeIcon'
+export { default as ZoomInIcon } from './ZoomInIcon'
+export { default as DownloadIcon } from './DownloadIcon'

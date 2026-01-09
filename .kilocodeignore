@@ -1,0 +1,168 @@
+# GirlAtlas Project .gitignore
+
+# ============================================
+# 通用忽略规则
+# ============================================
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+.git/
+
+# 临时文件
+*.tmp
+*.temp
+*~
+
+# 日志文件
+*.log
+logs/
+*.log.*
+
+# 编辑器配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+*.env
+
+# ============================================
+# Backend (Python) 忽略规则
+# ============================================
+
+# Python 虚拟环境
+venv/
+env/
+ENV/
+*.env
+
+# Python 编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 包分发文件
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# 单元测试 / 覆盖率
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Backend 数据库文件（除了示例）
+backend/girlatlas.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Backend 上传/缓存目录
+backend/images
+backend/tmp
+backend/venv
+
+# ============================================
+# Frontend (Node.js) 忽略规则
+# ============================================
+
+# 依赖目录
+node_modules/
+bower_components/
+
+# 构建输出
+dist/
+dist-ssr/
+build/
+*.local
+
+# 日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 编辑器配置
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 锁文件（根据需要选择）
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ============================================
+# 项目特定忽略规则
+# ============================================
+
+# 图片文件（如果不需要版本控制）
+# backend/images/xiuren/*.cbz
+
+# 临时生成的文件
+*.bak
+*.backup
+
+# IDE 特定文件
+*.code-workspace
+
+# 测试相关
+test-results/
+coverage/
+
+# 编译产物
+*.min.js
+*.min.css
+
+# API 密钥和敏感信息
+*secret*
+*key*
+
+# 本地开发配置
+*.local.json
+local.config.js
