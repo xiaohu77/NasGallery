@@ -2,6 +2,7 @@ import { Routes, Route, useLocation } from 'react-router-dom'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { OfflineProvider } from './contexts/OfflineContext'
 import Layout from './components/Layout'
+import PWAInstallPrompt from './components/PWAInstallPrompt'
 import Home from './pages/Home'
 import AlbumDetail from './pages/AlbumDetail'
 
@@ -53,6 +54,7 @@ function App(): JSX.Element {
             <Route path="/album/:id" element={<AlbumDetailWrapper />} />
           </Route>
         </Routes>
+        <PWAInstallPrompt />
       </OfflineProvider>
     </ThemeProvider>
   )

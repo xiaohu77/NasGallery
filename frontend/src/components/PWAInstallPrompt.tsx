@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useOffline } from '../contexts/OfflineContext'
+import { useTheme } from '../contexts/ThemeContext'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>
@@ -8,6 +9,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 const PWAInstallPrompt = () => {
   const { isPWA } = useOffline()
+  const { theme } = useTheme()
   const [showPrompt, setShowPrompt] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
 
@@ -61,72 +63,29 @@ const PWAInstallPrompt = () => {
   if (!showPrompt || isPWA) return null
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: '20px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white',
-      padding: '16px 20px',
-      borderRadius: '12px',
-      boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-      zIndex: 10000,
-      maxWidth: '90%',
-      width: '400px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-      animation: 'slideUp 0.3s ease-out'
-    }}>
-      <style>{`
-        @keyframes slideUp {
-          from { transform: translateX(-50%) translateY(100%); opacity: 0; }
-          to { transform: translateX(-50%) translateY(0); opacity: 1; }
-        }
-      `}</style>
-      
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '20px' }}>📱</span>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '2px' }}>
+    <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border fixed bottom-4 left-1/2 transform -translate-x-1/2 rounded-xl shadow-lg p-4 max-w-[90%] w-[400px] flex flex-col gap-3 animate-slideUp z-50`}>
+      <div className="flex items-center gap-2">
+        <span className="text-xl">📱</span>
+        <div className="flex-1">
+          <div className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'} font-bold text-base mb-0.5`}>
             安装 GirlAtlas
           </div>
-          <div style={{ fontSize: '13px', opacity: 0.9 }}>
+          <div className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} text-sm`}>
             离线浏览图集，更快的访问速度
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px' }}>
+      <div className="flex gap-2">
         <button
           onClick={handleInstall}
-          style={{
-            flex: 1,
-            background: 'white',
-            color: '#667eea',
-            border: 'none',
-            padding: '10px 16px',
-            borderRadius: '8px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
+          className={`${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} flex-1 px-4 py-2 rounded-lg font-semibold cursor-pointer text-sm transition-colors`}
         >
           立即安装
         </button>
         <button
           onClick={handleDismiss}
-          style={{
-            flex: 1,
-            background: 'transparent',
-            color: 'white',
-            border: '1px solid rgba(255,255,255,0.5)',
-            padding: '10px 16px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
+          className={`${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600 text-gray-300 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'} flex-1 px-4 py-2 rounded-lg cursor-pointer text-sm transition-colors border`}
         >
           稍后
         </button>
