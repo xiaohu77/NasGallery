@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PWAService } from '../services/pwaService';
 import { AlbumSummary, AlbumCard } from '../types/album';
+import { sessionState, CacheKeys } from '../utils/cache';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://back.xiaohu777.cn';
 
@@ -9,13 +10,81 @@ export const useAlbums = (
   categoryId: number | null,
   pwaService: PWAService
 ) => {
-  const [albums, setAlbums] = useState<AlbumCard[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [scrollPosition, setScrollPosition] = useState<number>(0);
+  // 生成状态键
+  const stateKey = CacheKeys.state.albums(categoryType, categoryId);
+  
+  // 使用ref来跟踪是否已经从缓存恢复
+  const hasRestoredFromCache = useRef(false);
+  
+  // 从缓存恢复初始状态（只在组件挂载时执行一次）
+  const getInitialState = () => {
+    if (hasRestoredFromCache.current) {
+      return {
+        albums: [],
+        loading: true,
+        error: null,
+        page: 1,
+        hasMore: true,
+        isLoadingMore: false,
+        scrollPosition: 0
+      };
+    }
+    
+    const savedState = sessionState.get<{
+      albums: AlbumCard[];
+      page: number;
+      hasMore: boolean;
+      scrollPosition: number;
+      timestamp: number;
+    }>(stateKey);
+    
+    // 检查缓存是否有效（5分钟内）
+    const isCacheValid = savedState && (Date.now() - savedState.timestamp < 5 * 60 * 1000);
+    
+    if (isCacheValid) {
+      hasRestoredFromCache.current = true;
+      return {
+        albums: savedState.albums,
+        loading: false,
+        error: null,
+        page: savedState.page,
+        hasMore: savedState.hasMore,
+        isLoadingMore: false,
+        scrollPosition: savedState.scrollPosition
+      };
+    }
+    
+    return {
+      albums: [],
+      loading: true,
+      error: null,
+      page: 1,
+      hasMore: true,
+      isLoadingMore: false,
+      scrollPosition: 0
+    };
+  };
+
+  const initialState = getInitialState();
+  
+  const [albums, setAlbums] = useState<AlbumCard[]>(initialState.albums);
+  const [loading, setLoading] = useState<boolean>(initialState.loading);
+  const [error, setError] = useState<string | null>(initialState.error);
+  const [page, setPage] = useState<number>(initialState.page);
+  const [hasMore, setHasMore] = useState<boolean>(initialState.hasMore);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(initialState.isLoadingMore);
+  const [scrollPosition, setScrollPosition] = useState<number>(initialState.scrollPosition);
+  
+  // 保存状态到缓存
+  const saveState = useCallback((currentAlbums: AlbumCard[], currentPage: number, currentHasMore: boolean, currentScrollPosition: number) => {
+    sessionState.set(stateKey, {
+      albums: currentAlbums,
+      page: currentPage,
+      hasMore: currentHasMore,
+      scrollPosition: currentScrollPosition,
+      timestamp: Date.now()
+    });
+  }, [stateKey]);
 
   const transformAlbum = useCallback((album: AlbumSummary): AlbumCard => {
     let coverImage = album.cover_url || '';
@@ -54,8 +123,15 @@ export const useAlbums = (
 
       if (pageNum === 1) {
         setAlbums(newAlbums);
+        // 保存第一页状态
+        saveState(newAlbums, 1, response.page * response.size < response.total, 0);
       } else {
-        setAlbums(prev => [...prev, ...newAlbums]);
+        setAlbums(prev => {
+          const updatedAlbums = [...prev, ...newAlbums];
+          // 保存更多数据状态
+          saveState(updatedAlbums, pageNum, response.page * response.size < response.total, scrollPosition);
+          return updatedAlbums;
+        });
       }
 
       return newAlbums;
@@ -65,12 +141,14 @@ export const useAlbums = (
       console.error('加载图集失败:', err);
       throw err;
     }
-  }, [categoryType, categoryId, pwaService, transformAlbum]);
+  }, [categoryType, categoryId, pwaService, transformAlbum, saveState, scrollPosition]);
 
   // 保存滚动位置
   const saveScrollPosition = useCallback((position: number) => {
     setScrollPosition(position);
-  }, []);
+    // 同时保存到缓存
+    saveState(albums, page, hasMore, position);
+  }, [albums, page, hasMore, saveState]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || isLoadingMore || loading) return;
@@ -92,6 +170,7 @@ export const useAlbums = (
     setLoading(true);
     setPage(1);
     setHasMore(true);
+    setAlbums([]);
 
     try {
       let response;
@@ -110,6 +189,9 @@ export const useAlbums = (
 
       const newAlbums = response.items.map(transformAlbum);
       setAlbums(newAlbums);
+      
+      // 保存刷新后的状态
+      saveState(newAlbums, 1, response.page * response.size < response.total, 0);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '刷新失败';
       setError(errorMessage);
@@ -117,9 +199,28 @@ export const useAlbums = (
     } finally {
       setLoading(false);
     }
-  }, [categoryType, categoryId, pwaService, transformAlbum]);
+  }, [categoryType, categoryId, pwaService, transformAlbum, saveState]);
 
+  // 当分类变化时，检查是否需要重新加载
   useEffect(() => {
+    const savedState = sessionState.get<{
+      albums: AlbumCard[];
+      page: number;
+      hasMore: boolean;
+      scrollPosition: number;
+      timestamp: number;
+    }>(stateKey);
+    
+    // 检查缓存是否有效（5分钟内）
+    const isCacheValid = savedState && (Date.now() - savedState.timestamp < 5 * 60 * 1000);
+    
+    // 如果有有效的缓存数据，不需要重新加载
+    if (savedState && isCacheValid && savedState.albums.length > 0) {
+      setLoading(false);
+      return;
+    }
+    
+    // 如果没有缓存数据或缓存过期，进行初始加载
     const loadInitialData = async () => {
       setLoading(true);
       setPage(1);
@@ -136,7 +237,7 @@ export const useAlbums = (
     };
 
     loadInitialData();
-  }, [fetchData]);
+  }, [fetchData, stateKey]);
 
   return {
     albums,

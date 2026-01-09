@@ -102,12 +102,19 @@ const Home = (): JSX.Element => {
     }
   }, [hasMore, isLoadingMore, loadMore])
 
-  // 滚动位置保存和恢复
+  // 滚动位置保存和恢复 - 只在组件挂载时恢复一次
+  const hasRestoredScroll = useRef(false)
   useEffect(() => {
-    if (scrollPosition > 0 && mainRef.current) {
-      mainRef.current.scrollTo({ top: scrollPosition, behavior: 'auto' });
+    if (scrollPosition > 0 && mainRef.current && !hasRestoredScroll.current) {
+      // 使用 setTimeout 确保 DOM 已经渲染完成
+      setTimeout(() => {
+        if (mainRef.current) {
+          mainRef.current.scrollTo({ top: scrollPosition, behavior: 'auto' });
+          hasRestoredScroll.current = true;
+        }
+      }, 50);
     }
-  }, [scrollPosition]);
+  }, [scrollPosition, loading]);
 
   // 重试加载
   const handleRetry = () => {
@@ -166,6 +173,11 @@ const Home = (): JSX.Element => {
                 key={album.id}
                 to={`/album/${album.id}`}
                 className="card group flex flex-col"
+                onClick={(e) => {
+                  // 阻止默认行为，使用编程式导航以便更好地控制
+                  e.preventDefault();
+                  navigate(`/album/${album.id}`);
+                }}
               >
                 <div className="relative overflow-hidden aspect-[2/3] flex-shrink-0">
                   {album.coverImage ? (
