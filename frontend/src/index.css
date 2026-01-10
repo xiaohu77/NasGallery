@@ -57,42 +57,46 @@
   }
 }
 
-/* 自定义滚动条样式 */
+/* 隐藏滚动条但保持滚动功能 */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 0;
+  height: 0;
 }
 
 ::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-  transition: background 0.2s ease;
+  background: transparent;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* 暗色模式滚动条 */
-.dark ::-webkit-scrollbar-thumb {
-  background: #333;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Firefox 自定义滚动条 */
+/* Firefox 隐藏滚动条 */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-width: none;
 }
 
-.dark * {
-  scrollbar-color: #333 transparent;
+/* IE/Edge 隐藏滚动条 */
+* {
+  -ms-overflow-style: none;
+}
+
+/* 特定元素的滚动条隐藏 */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 全局隐藏body滚动条但保持功能 */
+body {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }

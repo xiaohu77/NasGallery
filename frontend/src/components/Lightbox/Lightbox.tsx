@@ -46,7 +46,7 @@ const Lightbox = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 lightbox-container">
-      <div className="relative max-w-6xl w-full max-h-[90vh] flex flex-col">
+      <div className="relative max-w-6xl w-full max-h-[90vh] flex flex-col hide-scrollbar">
         {/* 头部 */}
         <div className="flex items-center justify-between mb-4">
           <div className="text-white">

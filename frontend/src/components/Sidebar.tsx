@@ -163,7 +163,7 @@ const Sidebar = () => {
   // 加载状态 - 优化：只在初始加载时显示
   if (loading && !categories) {
     return (
-      <aside className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto">
+      <aside className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto hide-scrollbar">
         <div className="p-4 text-center text-sm text-gray-500">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-600 mx-auto mb-2"></div>
           加载中...
@@ -175,10 +175,10 @@ const Sidebar = () => {
   // 错误状态
   if (error) {
     return (
-      <aside className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto">
+      <aside className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto hide-scrollbar">
         <div className="p-4 text-center text-sm text-red-500">
           <p className="mb-2">{error}</p>
-          <button 
+          <button
             onClick={reloadCategories}
             className="text-xs underline hover:text-red-600 dark:hover:text-red-400"
           >
@@ -192,7 +192,7 @@ const Sidebar = () => {
   // 空数据状态
   if (!categories || menuData.every(menu => !menu.children || menu.children.length === 0)) {
     return (
-      <aside className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto">
+      <aside className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto hide-scrollbar">
         <div className="p-4 text-center text-sm text-gray-500">
           暂无分类数据
         </div>
@@ -204,7 +204,7 @@ const Sidebar = () => {
     <>
       {/* 侧边栏 */}
       <aside
-        className={`fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 transition-transform duration-300 z-40 overflow-y-auto ${
+        className={`fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 transition-transform duration-300 z-40 overflow-y-auto hide-scrollbar ${
           isMobile ? (mobileOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'
         } ${isMobile ? 'shadow-2xl' : ''}`}
       >

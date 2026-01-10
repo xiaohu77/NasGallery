@@ -135,7 +135,7 @@ const Home = (): JSX.Element => {
   }, [currentCategory])
 
   return (
-    <div className="py-4 px-4 sm:px-6 lg:px-8" ref={mainRef} onScroll={(e) => {
+    <div className="py-4 px-4 sm:px-6 lg:px-8 hide-scrollbar" ref={mainRef} onScroll={(e) => {
       const target = e.currentTarget;
       saveScrollPosition(target.scrollTop);
     }}>

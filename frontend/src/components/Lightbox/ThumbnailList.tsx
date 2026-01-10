@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import { ImageItem } from '../../types/album'
 
 interface ThumbnailListProps {
@@ -8,31 +7,8 @@ interface ThumbnailListProps {
 }
 
 const ThumbnailList = ({ images, selectedImage, onThumbnailClick }: ThumbnailListProps) => {
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (containerRef.current && selectedImage) {
-      const selectedIndex = images.findIndex(img => img.id === selectedImage.id)
-      if (selectedIndex >= 0) {
-        // 计算滚动位置，使当前图片居中
-        const containerWidth = containerRef.current.offsetWidth
-        const thumbnailWidth = 64 // w-16 = 64px
-        const gap = 8 // gap-2 = 8px
-        const itemWidth = thumbnailWidth + gap
-        
-        // 计算目标滚动位置：使选中项居中
-        const targetScroll = selectedIndex * itemWidth - (containerWidth / 2) + (thumbnailWidth / 2)
-        
-        containerRef.current.scrollTo({
-          left: targetScroll,
-          behavior: 'smooth'
-        })
-      }
-    }
-  }, [selectedImage, images])
-
   return (
-    <div className="mt-4 overflow-x-auto" ref={containerRef}>
+    <div className="mt-4 overflow-x-auto hide-scrollbar">
       <div className="flex gap-2 pb-2">
         {images.map((image) => {
           const isSelected = image.id === selectedImage?.id

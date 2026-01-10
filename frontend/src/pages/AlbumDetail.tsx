@@ -215,7 +215,7 @@ const AlbumDetail = (): JSX.Element => {
   }
 
   return (
-    <div className="py-8 px-4 sm:px-6 lg:px-8" onScroll={handleScroll} style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 80px)' }}>
+    <div className="py-8 px-4 sm:px-6 lg:px-8 hide-scrollbar" onScroll={handleScroll} style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 80px)' }}>
       <AlbumHeader album={album} onBack={() => navigate(-1)} />
       
       {/* 显示加载进度 */}

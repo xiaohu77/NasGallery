@@ -8,7 +8,7 @@ const Layout = (): JSX.Element => {
       <Header />
       <div className="flex pt-16">
         <Sidebar />
-        <main className="flex-1 lg:pl-64">
+        <main className="flex-1 lg:pl-64 hide-scrollbar">
           <Outlet />
         </main>
       </div>
