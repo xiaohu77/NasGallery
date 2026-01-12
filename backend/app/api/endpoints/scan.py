@@ -97,7 +97,8 @@ async def cleanup_data(
         days: 删除超过多少天的记录（默认30天）
     """
     try:
-        cleanup_deleted_albums(db, days)
+        from ...services.cache import cache_service
+        cleanup_deleted_albums(db, days, cache_service)
         return {
             "success": True,
             "message": f"已清理超过 {days} 天的删除记录"

@@ -1,5 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://back.xiaohu777.cn';
 
+// 导出类
 export class PWAService {
   constructor() {
     // 移除了缓存管理器依赖

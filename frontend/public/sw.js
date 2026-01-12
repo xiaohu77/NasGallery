@@ -51,6 +51,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // 跳过 chrome-extension 协议的请求
+  if (request.url.startsWith('chrome-extension://')) {
+    return;
+  }
+
   // API请求处理 - 识别所有API端点
   const isAPIRequest = (
     // 生产环境域名
@@ -88,6 +93,11 @@ self.addEventListener('fetch', (event) => {
 
 // 处理API请求
 async function handleAPIRequest(request) {
+  // 跳过 chrome-extension 协议的请求
+  if (request.url.startsWith('chrome-extension://')) {
+    return fetch(request);
+  }
+  
   try {
     // 尝试网络请求
     const response = await fetch(request);
@@ -127,6 +137,11 @@ async function handleAPIRequest(request) {
 
 // 处理静态资源请求
 async function handleStaticRequest(request) {
+  // 跳过 chrome-extension 协议的请求
+  if (request.url.startsWith('chrome-extension://')) {
+    return fetch(request);
+  }
+  
   // 首先尝试从缓存获取
   const cachedResponse = await caches.match(request);
   
@@ -138,8 +153,10 @@ async function handleStaticRequest(request) {
   try {
     const response = await fetch(request);
     
-    // 如果成功，缓存响应
-    if (response.ok && (request.destination === 'style' || request.destination === 'script' || request.destination === 'image' || request.destination === 'font')) {
+    // 如果成功，缓存响应（排除 chrome-extension）
+    if (response.ok &&
+        !request.url.startsWith('chrome-extension://') &&
+        (request.destination === 'style' || request.destination === 'script' || request.destination === 'image' || request.destination === 'font')) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, response.clone());
     }
@@ -167,6 +184,12 @@ async function syncAlbumsData() {
     const cache = await caches.open(CACHE_NAME);
     // 使用正确的API路径（不以/api开头）
     const request = new Request('/albums/?page=1&size=20');
+    
+    // 跳过 chrome-extension 协议的请求
+    if (request.url.startsWith('chrome-extension://')) {
+      return;
+    }
+    
     const response = await fetch(request);
     if (response.ok) {
       // 添加时间戳到响应头

@@ -404,8 +404,8 @@ def update_statistics(db: Session):
         raise
 
 
-def detect_deleted_albums(db: Session, existing_files: Set[str], scan_logger: ScanLogger):
-    """检测并标记已删除的图集"""
+def detect_deleted_albums(db: Session, existing_files: Set[str], scan_logger: ScanLogger, cache_service=None):
+    """检测并标记已删除的图集，同时清理缓存"""
     try:
         # 查找数据库中所有有效图集
         albums = db.query(Album).filter(Album.is_active == 1).all()
@@ -418,9 +418,22 @@ def detect_deleted_albums(db: Session, existing_files: Set[str], scan_logger: Sc
                 album.updated_at = datetime.utcnow()
                 scan_logger.log_deleted_album(album.id, album.title)
                 deleted_count += 1
+                
+                # 清理对应的缓存文件
+                if cache_service:
+                    try:
+                        # 清理图片列表缓存
+                        cache_service.clear_album_image_list(album.id)
+                        # 清理提取图片缓存
+                        cache_service.clear_album_extracted_images(album.id)
+                        # 清理元数据缓存
+                        cache_service.clear_album_metadata(album.id)
+                        logger.debug(f"已清理图集 {album.id} 的缓存文件")
+                    except Exception as e:
+                        logger.warning(f"清理图集 {album.id} 缓存失败: {e}")
         
         if deleted_count > 0:
-            logger.info(f"检测到 {deleted_count} 个已删除的图集")
+            logger.info(f"检测到 {deleted_count} 个已删除的图集，并清理对应缓存")
             
     except Exception as e:
         logger.error(f"检测删除图集失败: {e}")
@@ -445,6 +458,7 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
     
     # 初始化封面服务
     from ..config import settings
+    from .cache import cache_service
     cover_service = CoverService(settings.COVERS_DIR)
     
     scan_logger = ScanLogger()
@@ -492,8 +506,8 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
             scan_logger.log_error("文件扫描", f"无法访问目录: {e}")
             return scan_logger.get_summary()
         
-        # 2. 检测已删除的图集
-        detect_deleted_albums(db, existing_files, scan_logger)
+        # 2. 检测已删除的图集并清理缓存
+        detect_deleted_albums(db, existing_files, scan_logger, cache_service)
         
         # 3. 处理每个CBZ文件
         for cbz_file in cbz_files:
@@ -639,13 +653,14 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
     return scan_logger.get_summary()
 
 
-def cleanup_deleted_albums(db: Session, days: int = 30):
+def cleanup_deleted_albums(db: Session, days: int = 30, cache_service=None):
     """
     清理已删除超过指定天数的图集记录
     
     Args:
         db: 数据库会话
         days: 删除超过多少天的记录
+        cache_service: 缓存服务实例
     """
     try:
         cutoff_date = datetime.utcnow() - timedelta(days=days)
@@ -658,6 +673,16 @@ def cleanup_deleted_albums(db: Session, days: int = 30):
         
         deleted_count = 0
         for album in albums_to_delete:
+            # 清理缓存文件
+            if cache_service:
+                try:
+                    cache_service.clear_album_image_list(album.id)
+                    cache_service.clear_album_extracted_images(album.id)
+                    cache_service.clear_album_metadata(album.id)
+                    logger.debug(f"已清理图集 {album.id} 的缓存文件")
+                except Exception as e:
+                    logger.warning(f"清理图集 {album.id} 缓存失败: {e}")
+            
             # 删除标签关联
             db.query(AlbumTag).filter(AlbumTag.album_id == album.id).delete()
             

@@ -355,6 +355,49 @@ class CacheService:
             
             return cleared_count
     
+    def clear_album_image_list(self, album_id: int):
+        """清除指定图集的图片列表缓存"""
+        cache_file = self.image_lists_dir / f"{album_id}.json"
+        try:
+            if cache_file.exists():
+                cache_file.unlink()
+            # 清除内存缓存
+            if str(album_id) in self.list_cache:
+                del self.list_cache[str(album_id)]
+        except Exception as e:
+            print(f"清除图片列表缓存失败: {e}")
+    
+    def clear_album_extracted_images(self, album_id: int):
+        """清除指定图集的提取图片缓存"""
+        cache_dir = self.extracted_images_dir / str(album_id)
+        try:
+            if cache_dir.exists():
+                # 删除所有图片文件
+                for file in cache_dir.iterdir():
+                    if file.is_file():
+                        file.unlink()
+                # 删除目录
+                cache_dir.rmdir()
+            
+            # 清除内存缓存（需要遍历删除）
+            keys_to_remove = [k for k in self.image_cache.keys() if k.startswith(f"{album_id}_")]
+            for key in keys_to_remove:
+                del self.image_cache[key]
+        except Exception as e:
+            print(f"清除提取图片缓存失败: {e}")
+    
+    def clear_album_metadata(self, album_id: int):
+        """清除指定图集的元数据缓存"""
+        cache_file = self.metadata_dir / f"{album_id}.json"
+        try:
+            if cache_file.exists():
+                cache_file.unlink()
+            # 清除内存缓存
+            if str(album_id) in self.metadata_cache:
+                del self.metadata_cache[str(album_id)]
+        except Exception as e:
+            print(f"清除元数据缓存失败: {e}")
+    
     def get_cache_stats(self) -> Dict[str, Any]:
         """获取缓存统计信息"""
         stats = {
