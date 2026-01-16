@@ -14,7 +14,7 @@ if "sqlite" in settings.DATABASE_URL:
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args=connect_args,
-    echo=settings.DEBUG,
+    echo=False,  # 禁用 SQLAlchemy 的详细 SQL 日志输出
     pool_pre_ping=True,  # 在使用连接前检查连接是否有效
     pool_recycle=3600,  # 定期回收连接
     pool_size=20,  # 连接池大小

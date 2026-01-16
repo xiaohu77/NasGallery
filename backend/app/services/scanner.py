@@ -3,6 +3,7 @@ import re
 import json
 import fcntl
 import logging
+import os
 from pathlib import Path
 from typing import List, Dict, Optional, Set
 from datetime import datetime, timedelta
@@ -497,11 +498,19 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
     try:
         logger.info(f"🚀 开始扫描: {scan_path}")
         
-        # 1. 查找所有CBZ文件
+        # 1. 查找所有CBZ文件（包括软连接中的内容）
         try:
-            cbz_files = list(scan_path.rglob("*.cbz"))
+            cbz_files = []
+            
+            # 使用 os.walk 并启用跟随软连接
+            for root, dirs, files in os.walk(scan_path, followlinks=True):
+                for file in files:
+                    if file.endswith('.cbz'):
+                        file_path = Path(root) / file
+                        cbz_files.append(file_path)
+            
             existing_files = {str(f) for f in cbz_files}
-            logger.info(f"📁 发现 {len(cbz_files)} 个CBZ文件")
+            logger.info(f"📁 发现 {len(cbz_files)} 个CBZ文件（包括软连接中的内容）")
         except Exception as e:
             scan_logger.log_error("文件扫描", f"无法访问目录: {e}")
             return scan_logger.get_summary()

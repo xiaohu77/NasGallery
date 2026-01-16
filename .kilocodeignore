@@ -101,7 +101,7 @@ backend/venv
 # ============================================
 
 # 依赖目录
-node_modules/
+frontend/node_modules/
 bower_components/
 
 # 构建输出

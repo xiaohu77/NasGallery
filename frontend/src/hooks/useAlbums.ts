@@ -12,10 +12,10 @@ export const useAlbums = (
 ) => {
   // 生成状态键
   const stateKey = CacheKeys.state.albums(categoryType, categoryId);
-  
+   
   // 使用ref来跟踪是否已经从缓存恢复
   const hasRestoredFromCache = useRef(false);
-  
+   
   // 从缓存恢复初始状态（只在组件挂载时执行一次）
   const getInitialState = () => {
     if (hasRestoredFromCache.current) {
@@ -35,13 +35,10 @@ export const useAlbums = (
       page: number;
       hasMore: boolean;
       scrollPosition: number;
-      timestamp: number;
     }>(stateKey);
     
-    // 检查缓存是否有效（5分钟内）
-    const isCacheValid = savedState && (Date.now() - savedState.timestamp < 5 * 60 * 1000);
-    
-    if (isCacheValid) {
+    // 如果有缓存数据，直接恢复（无有效期限制）
+    if (savedState && savedState.albums.length > 0) {
       hasRestoredFromCache.current = true;
       return {
         albums: savedState.albums,
@@ -66,7 +63,7 @@ export const useAlbums = (
   };
 
   const initialState = getInitialState();
-  
+   
   const [albums, setAlbums] = useState<AlbumCard[]>(initialState.albums);
   const [loading, setLoading] = useState<boolean>(initialState.loading);
   const [error, setError] = useState<string | null>(initialState.error);
@@ -74,15 +71,14 @@ export const useAlbums = (
   const [hasMore, setHasMore] = useState<boolean>(initialState.hasMore);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(initialState.isLoadingMore);
   const [scrollPosition, setScrollPosition] = useState<number>(initialState.scrollPosition);
-  
+   
   // 保存状态到缓存
   const saveState = useCallback((currentAlbums: AlbumCard[], currentPage: number, currentHasMore: boolean, currentScrollPosition: number) => {
     sessionState.set(stateKey, {
       albums: currentAlbums,
       page: currentPage,
       hasMore: currentHasMore,
-      scrollPosition: currentScrollPosition,
-      timestamp: Date.now()
+      scrollPosition: currentScrollPosition
     });
   }, [stateKey]);
 
@@ -208,19 +204,15 @@ export const useAlbums = (
       page: number;
       hasMore: boolean;
       scrollPosition: number;
-      timestamp: number;
     }>(stateKey);
     
-    // 检查缓存是否有效（5分钟内）
-    const isCacheValid = savedState && (Date.now() - savedState.timestamp < 5 * 60 * 1000);
-    
-    // 如果有有效的缓存数据，不需要重新加载
-    if (savedState && isCacheValid && savedState.albums.length > 0) {
+    // 如果有缓存数据，直接恢复（无有效期限制，用户自己决定何时刷新）
+    if (savedState && savedState.albums.length > 0) {
       setLoading(false);
       return;
     }
     
-    // 如果没有缓存数据或缓存过期，进行初始加载
+    // 如果没有缓存数据，进行初始加载
     const loadInitialData = async () => {
       setLoading(true);
       setPage(1);
