@@ -5,9 +5,9 @@ from fastapi.middleware.gzip import GZipMiddleware
 from pathlib import Path
 from typing import Optional
 
-from .config import settings
-from .database import init_db
-from .api.endpoints import albums, categories, scan
+from app.config import settings
+from app.database import init_db
+from app.api.endpoints import albums, categories, scan, auth
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -40,6 +40,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.include_router(albums.router)
 app.include_router(categories.router)
 app.include_router(scan.router)
+app.include_router(auth.router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -53,7 +54,7 @@ async def startup_event():
     init_db()
     
     # 初始化缓存服务（触发定时清理任务）
-    from .services.cache import cache_service
+    from app.services.cache import cache_service
     print(f"应用启动: {settings.APP_NAME} v{settings.APP_VERSION}")
     print(f"数据库: {settings.DATABASE_URL}")
     print(f"图片目录: {settings.IMAGES_DIR}")
@@ -105,6 +106,6 @@ async def serve_cover(cover_name: str):
 @app.get("/covers/stats")
 async def cover_stats():
     """获取封面统计信息"""
-    from ..services.cover import CoverService
+    from app.services.cover import CoverService
     cover_service = CoverService(settings.COVERS_DIR)
     return cover_service.get_stats()

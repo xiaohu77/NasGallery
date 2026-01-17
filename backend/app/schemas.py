@@ -99,3 +99,33 @@ class ScanResponse(BaseModel):
     scanned_files: int
     new_albums: int
     updated_albums: int
+
+
+# 用户相关模型
+class UserBase(BaseModel):
+    username: str
+    email: str
+
+
+class UserCreate(UserBase):
+    password: str
+
+
+class UserResponse(UserBase):
+    id: int
+    created_at: datetime
+    is_admin: int
+    
+    class Config:
+        from_attributes = True
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse

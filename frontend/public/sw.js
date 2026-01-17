@@ -76,7 +76,7 @@ self.addEventListener('fetch', (event) => {
      url.origin.includes('127.0.0.1')) &&
     // 图片API路径模式
     (url.pathname.startsWith('/covers/') ||
-     (url.pathname.includes('/images/') && url.pathname.endsWith('.jpg')))
+     (url.pathname.includes('/images/') && (url.pathname.endsWith('.jpg') || url.pathname.endsWith('.png') || url.pathname.endsWith('.jpeg'))))
   );
   
 
@@ -319,41 +319,7 @@ async function handleStaticRequest(request) {
   }
 }
 
-// 后台同步事件
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-albums') {
-    event.waitUntil(syncAlbumsData());
-  }
-});
 
-// 后台同步数据
-async function syncAlbumsData() {
-  try {
-    const cache = await caches.open(CACHE_NAME);
-    // 使用正确的API路径（不以/api开头）
-    const request = new Request('/albums/?page=1&size=20');
-    
-    // 跳过 chrome-extension 协议的请求
-    if (request.url.startsWith('chrome-extension://')) {
-      return;
-    }
-    
-    const response = await fetch(request);
-    if (response.ok) {
-      // 添加时间戳到响应头
-      const headers = new Headers(response.headers);
-      headers.append('sw-cache-date', new Date().toISOString());
-      const modifiedResponse = new Response(await response.clone().blob(), {
-        status: response.status,
-        statusText: response.statusText,
-        headers: headers
-      });
-      await cache.put(request, modifiedResponse);
-    }
-  } catch (error) {
-    console.log('后台同步失败:', error);
-  }
-}
 
 // 监听来自页面的消息
 self.addEventListener('message', (event) => {

@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://back.xiaohu777.cn';
+import { apiClient } from './apiInterceptor';
 
 // 导出类
 export class PWAService {
@@ -7,27 +7,19 @@ export class PWAService {
   }
 
   async getAlbumDetail(albumId: string): Promise<any> {
-    const response = await fetch(`${API_BASE}/albums/${albumId}`);
-    const data = await response.json();
-    return data;
+    return apiClient.get(`/albums/${albumId}`);
   }
 
   async refreshAlbumDetail(albumId: string): Promise<any> {
-    const response = await fetch(`${API_BASE}/albums/${albumId}`);
-    const data = await response.json();
-    return data;
+    return apiClient.get(`/albums/${albumId}`);
   }
 
   async getAlbumImages(albumId: string, page: number = 1, size: number = 20): Promise<any> {
-    const response = await fetch(`${API_BASE}/albums/${albumId}/images?page=${page}&size=${size}`);
-    const data = await response.json();
-    return data;
+    return apiClient.get(`/albums/${albumId}/images`, { page: page.toString(), size: size.toString() });
   }
 
   async refreshAlbumImages(albumId: string, page: number = 1, size: number = 20): Promise<any> {
-    const response = await fetch(`${API_BASE}/albums/${albumId}/images?page=${page}&size=${size}`);
-    const data = await response.json();
-    return data;
+    return apiClient.get(`/albums/${albumId}/images`, { page: page.toString(), size: size.toString() });
   }
 
   async getAlbumsByCategory(
@@ -39,21 +31,19 @@ export class PWAService {
     let endpoint: string;
     switch (categoryType) {
       case 'org':
-        endpoint = `${API_BASE}/albums/org/${categoryId}`;
+        endpoint = `/albums/org/${categoryId}`;
         break;
       case 'model':
-        endpoint = `${API_BASE}/albums/model/${categoryId}`;
+        endpoint = `/albums/model/${categoryId}`;
         break;
       case 'tag':
-        endpoint = `${API_BASE}/albums/tag/${categoryId}`;
+        endpoint = `/albums/tag/${categoryId}`;
         break;
       default:
         throw new Error(`不支持的分类类型: ${categoryType}`);
     }
 
-    const response = await fetch(`${endpoint}?page=${page}&size=${size}`);
-    const data = await response.json();
-    return data;
+    return apiClient.get(endpoint, { page: page.toString(), size: size.toString() });
   }
 
   async refreshAlbumsByCategory(
@@ -65,44 +55,38 @@ export class PWAService {
     let endpoint: string;
     switch (categoryType) {
       case 'org':
-        endpoint = `${API_BASE}/albums/org/${categoryId}`;
+        endpoint = `/albums/org/${categoryId}`;
         break;
       case 'model':
-        endpoint = `${API_BASE}/albums/model/${categoryId}`;
+        endpoint = `/albums/model/${categoryId}`;
         break;
       case 'tag':
-        endpoint = `${API_BASE}/albums/tag/${categoryId}`;
+        endpoint = `/albums/tag/${categoryId}`;
         break;
       default:
         throw new Error(`不支持的分类类型: ${categoryType}`);
     }
 
-    const response = await fetch(`${endpoint}?page=${page}&size=${size}`);
-    const data = await response.json();
-    return data;
+    return apiClient.get(endpoint, { page: page.toString(), size: size.toString() });
   }
 
   async getAlbums(page: number = 1, size: number = 20): Promise<any> {
-    const response = await fetch(`${API_BASE}/albums/?page=${page}&size=${size}`);
-    const data = await response.json();
-    return data;
+    return apiClient.get('/albums/', { page: page.toString(), size: size.toString() });
   }
 
   async refreshAlbums(page: number = 1, size: number = 20): Promise<any> {
-    const response = await fetch(`${API_BASE}/albums/?page=${page}&size=${size}`);
-    const data = await response.json();
-    return data;
+    return apiClient.get('/albums/', { page: page.toString(), size: size.toString() });
+  }
+
+  async searchAlbums(query: string, page: number = 1, size: number = 20): Promise<any> {
+    return apiClient.get('/albums/', { page: page.toString(), size: size.toString(), search: query });
   }
 
   async getCategoryTree(): Promise<any> {
-    const response = await fetch(`${API_BASE}/categories/`);
-    const data = await response.json();
-    return data;
+    return apiClient.get('/categories/');
   }
 
   async refreshCategoryTree(): Promise<any> {
-    const response = await fetch(`${API_BASE}/categories/`);
-    const data = await response.json();
-    return data;
+    return apiClient.get('/categories/');
   }
 }

@@ -58,7 +58,7 @@ class SessionState {
 export const CacheKeys = {
   // 状态键
   state: {
-    albums: (type: string | null, id: number | null) => `state:albums:${type || 'all'}:${id || 'all'}`,
+    albums: (type: string | null, id: number | null, search?: string) => `state:albums:${type || 'all'}:${id || 'all'}:${search || 'none'}`,
     albumDetail: (id: string) => `state:album:${id}`
   }
 };

@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     # 扫描配置
     SCAN_INTERVAL: int = 3600  # 秒
     
+    # JWT配置
+    SECRET_KEY: str = "girlatlas-secret-key-change-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7天
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

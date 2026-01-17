@@ -29,6 +29,18 @@ const Home = (): JSX.Element => {
   
   const [pwaService] = useState(() => new PWAService())
   
+  // 从URL参数获取搜索查询
+  const searchQuery = useCallback(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('search') || ''
+  }, [location.search])
+  
+  // 从URL参数获取分类名称
+  const categoryName = useCallback(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('name') || null
+  }, [location.search])
+  
   // 解析当前路由信息
   const currentCategory = useCallback(() => {
     const path = location.pathname
@@ -44,19 +56,17 @@ const Home = (): JSX.Element => {
       const type = segments[1] as 'org' | 'model' | 'tag'
       const categoryId = parseInt(segments[2])
       
-      // 根据类型获取分类名称（可选，用于显示）
-      let name: string | null = null
-      if (type === 'org') name = '套图'
-      if (type === 'model') name = '模特'
-      if (type === 'tag') name = '标签'
+      // 从URL查询参数获取实际的分类名称
+      const name = categoryName()
       
       return { type, id: categoryId, name }
     }
     
     return { type: null, id: null, name: null }
-  }, [location.pathname])
+  }, [location.pathname, categoryName])
 
   const cat = currentCategory()
+  const query = searchQuery()
   
   // 使用增强的Hook
   const {
@@ -70,7 +80,7 @@ const Home = (): JSX.Element => {
     refresh,
     scrollPosition,
     saveScrollPosition
-  } = useAlbums(cat.type, cat.id, pwaService)
+  } = useAlbums(cat.type, cat.id, pwaService, query)
 
   // 懒加载观察器
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -124,6 +134,12 @@ const Home = (): JSX.Element => {
   // 获取当前分类显示名称
   const getCategoryDisplayName = useCallback(() => {
     const cat = currentCategory()
+    const query = searchQuery()
+    
+    if (query) {
+      return `搜索结果: "${query}"`
+    }
+    
     if (!cat.type) return '全部图集'
     
     const typeNames = {
@@ -132,7 +148,7 @@ const Home = (): JSX.Element => {
       tag: '标签'
     }
     return `${typeNames[cat.type]} - ${cat.name || cat.id}`
-  }, [currentCategory])
+  }, [currentCategory, searchQuery])
 
   return (
     <div className="py-4 px-4 sm:px-6 lg:px-8 hide-scrollbar" ref={mainRef} onScroll={(e) => {
@@ -141,7 +157,7 @@ const Home = (): JSX.Element => {
     }}>
       {/* 分类标题 */}
       <div className="mb-4">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
           {getCategoryDisplayName()}
         </h2>
       </div>

@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 from pathlib import Path
 from typing import Dict
 
-from ...database import get_db
-from ...schemas import ScanResponse
-from ...services.scanner import scan_albums, cleanup_deleted_albums, cleanup_orphaned_data, get_orphaned_stats
+from app.database import get_db
+from app.models import User
+from app.schemas import ScanResponse
+from app.services.scanner import scan_albums, cleanup_deleted_albums, cleanup_orphaned_data, get_orphaned_stats
+from app.api.endpoints.auth import get_current_user
 
 router = APIRouter(prefix="/scan", tags=["scan"])
 
@@ -21,6 +23,7 @@ def perform_scan(db: Session, scan_path: Path = None):
 @router.post("/", response_model=ScanResponse)
 async def scan_albums_endpoint(
     background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     full_scan: bool = False
 ):
@@ -55,6 +58,7 @@ async def scan_albums_endpoint(
 
 @router.post("/sync", response_model=ScanResponse)
 async def scan_albums_sync(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -88,6 +92,7 @@ async def scan_albums_sync(
 @router.post("/cleanup")
 async def cleanup_data(
     days: int = 30,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -112,6 +117,7 @@ async def cleanup_data(
 
 @router.post("/cleanup/orphans")
 async def cleanup_orphans(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -132,6 +138,7 @@ async def cleanup_orphans(
 
 @router.get("/stats/orphans")
 async def get_orphans_stats(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> Dict:
     """
@@ -142,6 +149,7 @@ async def get_orphans_stats(
 
 @router.get("/stats")
 async def get_scan_stats(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> Dict:
     """

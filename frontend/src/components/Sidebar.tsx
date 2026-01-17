@@ -128,6 +128,10 @@ const Sidebar = () => {
       routePath = `/tag/${categoryId}`
     }
     
+    // 添加分类名称到查询参数
+    const params = new URLSearchParams({ name: categoryName })
+    routePath += `?${params.toString()}`
+    
     // 导航到对应路由
     navigate(routePath)
     
@@ -163,7 +167,7 @@ const Sidebar = () => {
   // 加载状态 - 优化：只在初始加载时显示
   if (loading && !categories) {
     return (
-      <aside className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto hide-scrollbar">
+      <aside className="fixed top-12 left-0 h-[calc(100vh-3rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto hide-scrollbar">
         <div className="p-4 text-center text-sm text-gray-500">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-600 mx-auto mb-2"></div>
           加载中...
@@ -175,7 +179,7 @@ const Sidebar = () => {
   // 错误状态
   if (error) {
     return (
-      <aside className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto hide-scrollbar">
+      <aside className="fixed top-12 left-0 h-[calc(100vh-3rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto hide-scrollbar">
         <div className="p-4 text-center text-sm text-red-500">
           <p className="mb-2">{error}</p>
           <button
@@ -192,7 +196,7 @@ const Sidebar = () => {
   // 空数据状态
   if (!categories || menuData.every(menu => !menu.children || menu.children.length === 0)) {
     return (
-      <aside className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto hide-scrollbar">
+      <aside className="fixed top-12 left-0 h-[calc(100vh-3rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 z-40 overflow-y-auto hide-scrollbar">
         <div className="p-4 text-center text-sm text-gray-500">
           暂无分类数据
         </div>
@@ -204,7 +208,7 @@ const Sidebar = () => {
     <>
       {/* 侧边栏 */}
       <aside
-        className={`fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 transition-transform duration-300 z-40 overflow-y-auto hide-scrollbar ${
+        className={`fixed top-12 left-0 h-[calc(100vh-3rem)] w-64 bg-white/80 dark:bg-black/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 transition-transform duration-300 z-40 overflow-y-auto hide-scrollbar ${
           isMobile ? (mobileOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'
         } ${isMobile ? 'shadow-2xl' : ''}`}
       >

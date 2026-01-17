@@ -8,10 +8,11 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'https://back.xiaohu777.cn';
 export const useAlbums = (
   categoryType: 'org' | 'model' | 'tag' | null,
   categoryId: number | null,
-  pwaService: PWAService
+  pwaService: PWAService,
+  searchQuery?: string
 ) => {
-  // 生成状态键
-  const stateKey = CacheKeys.state.albums(categoryType, categoryId);
+  // 生成状态键（包含搜索查询）
+  const stateKey = CacheKeys.state.albums(categoryType, categoryId, searchQuery);
    
   // 使用ref来跟踪是否已经从缓存恢复
   const hasRestoredFromCache = useRef(false);
@@ -105,6 +106,8 @@ export const useAlbums = (
 
       if (categoryType && categoryId) {
         response = await pwaService.getAlbumsByCategory(categoryType, categoryId, pageNum, 20);
+      } else if (searchQuery) {
+        response = await pwaService.searchAlbums(searchQuery, pageNum, 20);
       } else {
         response = await pwaService.getAlbums(pageNum, 20);
       }
@@ -137,7 +140,7 @@ export const useAlbums = (
       console.error('加载图集失败:', err);
       throw err;
     }
-  }, [categoryType, categoryId, pwaService, transformAlbum, saveState, scrollPosition]);
+  }, [categoryType, categoryId, searchQuery, pwaService, transformAlbum, saveState, scrollPosition]);
 
   // 保存滚动位置
   const saveScrollPosition = useCallback((position: number) => {
@@ -173,6 +176,8 @@ export const useAlbums = (
 
       if (categoryType && categoryId) {
         response = await pwaService.refreshAlbumsByCategory(categoryType, categoryId, 1, 20);
+      } else if (searchQuery) {
+        response = await pwaService.searchAlbums(searchQuery, 1, 20);
       } else {
         response = await pwaService.refreshAlbums(1, 20);
       }
@@ -195,7 +200,7 @@ export const useAlbums = (
     } finally {
       setLoading(false);
     }
-  }, [categoryType, categoryId, pwaService, transformAlbum, saveState]);
+  }, [categoryType, categoryId, searchQuery, pwaService, transformAlbum, saveState]);
 
   // 当分类变化时，检查是否需要重新加载
   useEffect(() => {

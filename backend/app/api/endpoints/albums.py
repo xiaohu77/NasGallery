@@ -4,13 +4,15 @@ from typing import List, Optional
 from pathlib import Path
 from datetime import datetime
 
-from ...database import get_db
-from ...models import Album, AlbumTag, Tag
-from ...schemas import AlbumSummary, AlbumResponse, PagedResponse
-from ...services.archive import ArchiveService
-from ...services.cover import CoverService
-from ...services.cache import cache_service
-from ...config import settings
+from app.database import get_db
+from app.models import Album, AlbumTag, Tag, User
+from app.schemas import AlbumSummary, AlbumResponse, PagedResponse
+from app.services.archive import ArchiveService
+from app.services.cover import CoverService
+from app.services.cache import cache_service
+from app.config import settings
+from app.api.deps import DependsDB
+from app.api.endpoints.auth import get_current_user
 
 router = APIRouter(prefix="/albums", tags=["albums"])
 
@@ -25,15 +27,21 @@ async def get_albums(
     """
     获取图集列表，支持分页、标签筛选和搜索
     """
-    query = db.query(Album)
+    query = db.query(Album).filter(Album.is_active == 1)
     
     # 标签筛选
     if tag_id:
         query = query.join(AlbumTag).filter(AlbumTag.tag_id == tag_id)
     
-    # 搜索
+    # 搜索（支持标题和描述的模糊搜索）
     if search:
-        query = query.filter(Album.title.contains(search))
+        from sqlalchemy import or_
+        query = query.filter(
+            or_(
+                Album.title.contains(search),
+                Album.description.contains(search)
+            )
+        )
     
     # 总数
     total = query.count()
@@ -92,7 +100,10 @@ async def get_albums_by_organization(
         raise HTTPException(status_code=404, detail="组织不存在")
     
     # 通过组织关联的标签来筛选图集
-    query = db.query(Album).join(AlbumTag).filter(AlbumTag.tag_id == org.tag_id)
+    query = db.query(Album).join(AlbumTag).filter(
+        AlbumTag.tag_id == org.tag_id,
+        Album.is_active == 1
+    )
     
     # 总数
     total = query.count()
@@ -148,7 +159,10 @@ async def get_albums_by_model(
         raise HTTPException(status_code=404, detail="模特不存在")
     
     # 通过模特关联的标签来筛选图集
-    query = db.query(Album).join(AlbumTag).filter(AlbumTag.tag_id == model.tag_id)
+    query = db.query(Album).join(AlbumTag).filter(
+        AlbumTag.tag_id == model.tag_id,
+        Album.is_active == 1
+    )
     
     # 总数
     total = query.count()
@@ -204,7 +218,10 @@ async def get_albums_by_tag(
         raise HTTPException(status_code=404, detail="标签不存在")
     
     # 通过标签筛选图集
-    query = db.query(Album).join(AlbumTag).filter(AlbumTag.tag_id == tag_id)
+    query = db.query(Album).join(AlbumTag).filter(
+        AlbumTag.tag_id == tag_id,
+        Album.is_active == 1
+    )
     
     # 总数
     total = query.count()
@@ -246,7 +263,10 @@ async def get_album(album_id: int, db: Session = Depends(get_db)):
     """
     获取图集详情
     """
-    album = db.query(Album).filter(Album.id == album_id).first()
+    album = db.query(Album).filter(
+        Album.id == album_id,
+        Album.is_active == 1
+    ).first()
     if not album:
         raise HTTPException(status_code=404, detail="图集不存在")
     
@@ -274,7 +294,10 @@ async def get_album_images(
     
     if not cached_images:
         # 3. 缓存未命中，验证图集存在性并处理CBZ文件
-        album = db.query(Album).filter(Album.id == album_id).first()
+        album = db.query(Album).filter(
+            Album.id == album_id,
+            Album.is_active == 1
+        ).first()
         if not album:
             raise HTTPException(status_code=404, detail="图集不存在")
         
@@ -342,7 +365,10 @@ async def get_image_content(
     print(f"🔄 [图片提取] 从CBZ文件处理: {filename}")
     
     # 调用统一的CBZ处理函数（会缓存所有图片）
-    album = db.query(Album).filter(Album.id == album_id).first()
+    album = db.query(Album).filter(
+        Album.id == album_id,
+        Album.is_active == 1
+    ).first()
     if not album:
         raise HTTPException(status_code=404, detail="图集不存在")
     
@@ -365,13 +391,20 @@ async def get_image_content(
     return Response(content=image_data, media_type="image/jpeg")
 
 @router.post("/{album_id}/refresh")
-async def refresh_album(album_id: int, db: Session = Depends(get_db)):
+async def refresh_album(
+    album_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     刷新指定图集的元数据
     """
     from ...services.scanner import extract_cbz_metadata
     
-    album = db.query(Album).filter(Album.id == album_id).first()
+    album = db.query(Album).filter(
+        Album.id == album_id,
+        Album.is_active == 1
+    ).first()
     if not album:
         raise HTTPException(status_code=404, detail="图集不存在")
     
@@ -401,7 +434,7 @@ async def refresh_album(album_id: int, db: Session = Depends(get_db)):
 # ==================== 缓存管理API ====================
 
 @router.get("/cache/stats")
-async def get_cache_stats():
+async def get_cache_stats(current_user: User = Depends(get_current_user)):
     """
     获取缓存统计信息
     """
@@ -409,7 +442,10 @@ async def get_cache_stats():
 
 
 @router.post("/cache/clear")
-async def clear_cache(cache_type: str = "all"):
+async def clear_cache(
+    cache_type: str = "all",
+    current_user: User = Depends(get_current_user)
+):
     """
     清除缓存
     
@@ -430,7 +466,7 @@ async def clear_cache(cache_type: str = "all"):
 
 
 @router.post("/cache/cleanup")
-async def cleanup_expired_cache():
+async def cleanup_expired_cache(current_user: User = Depends(get_current_user)):
     """
     手动触发过期缓存清理
     """

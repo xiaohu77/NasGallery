@@ -1,10 +1,15 @@
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { OfflineProvider } from './contexts/OfflineContext'
+import { UserProvider } from './contexts/UserContext'
+import { useUser } from './contexts/UserContext'
 import Layout from './components/Layout'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 import Home from './pages/Home'
 import AlbumDetail from './pages/AlbumDetail'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import User from './pages/User'
 
 // 创建一个包装组件来管理 Home 页面的 key
 const HomeWrapper = () => {
@@ -41,20 +46,50 @@ const AlbumDetailWrapper = () => {
   return <AlbumDetail key={getKey()} />;
 };
 
+// 需要登录的路由组件
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const { isAuthenticated, isLoading } = useUser()
+  
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">加载中...</div>
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+  
+  return children
+}
+
 function App(): JSX.Element {
   return (
     <ThemeProvider>
       <OfflineProvider>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<HomeWrapper />} />
-            <Route path="/org/:id" element={<HomeWrapper />} />
-            <Route path="/model/:id" element={<HomeWrapper />} />
-            <Route path="/tag/:id" element={<HomeWrapper />} />
-            <Route path="/album/:id" element={<AlbumDetailWrapper />} />
-          </Route>
-        </Routes>
-        <PWAInstallPrompt />
+        <UserProvider>
+          <Routes>
+            {/* 公开路由 */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* 需要登录的路由 */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<HomeWrapper />} />
+              <Route path="/org/:id" element={<HomeWrapper />} />
+              <Route path="/model/:id" element={<HomeWrapper />} />
+              <Route path="/tag/:id" element={<HomeWrapper />} />
+              <Route path="/album/:id" element={<AlbumDetailWrapper />} />
+              <Route path="/user" element={<User />} />
+            </Route>
+          </Routes>
+          <PWAInstallPrompt />
+        </UserProvider>
       </OfflineProvider>
     </ThemeProvider>
   )

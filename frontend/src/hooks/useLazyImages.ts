@@ -31,7 +31,7 @@ export const useLazyImages = (
 
   const transformImages = useCallback((items: any[], albumId: string, startIndex: number): ImageItem[] => {
     return items.map((img, index) => ({
-      id: `${albumId}-${startIndex + index + 1}-${img.name}`,
+      id: `${albumId}-${startIndex + index + 1}`,
       url: `${API_BASE}${img.url}`,
       title: `图片 ${startIndex + index + 1}`,
       description: img.name

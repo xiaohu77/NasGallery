@@ -2,19 +2,23 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
 
-from ...database import get_db
-from ...models import Organization, Model, Tag
-from ...schemas import CategoryTree, OrganizationResponse, ModelResponse, TagResponse
+from app.database import get_db
+from app.models import Organization, Model, Tag, User
+from app.schemas import CategoryTree, OrganizationResponse, ModelResponse, TagResponse
+from app.api.endpoints.auth import get_current_user
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 @router.get("/", response_model=CategoryTree)
-async def get_categories(db: Session = Depends(get_db)):
+async def get_categories(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     获取分类树（用于侧边栏）
     """
-    # 获取套图
-    orgs = db.query(Organization).all()
+    # 获取套图（按专辑数量从大到小排序）
+    orgs = db.query(Organization).order_by(Organization.album_count.desc()).all()
     org_list = [
         OrganizationResponse(
             id=org.id,
@@ -26,8 +30,8 @@ async def get_categories(db: Session = Depends(get_db)):
         ) for org in orgs
     ]
     
-    # 获取模特
-    models = db.query(Model).all()
+    # 获取模特（按专辑数量从大到小排序）
+    models = db.query(Model).order_by(Model.album_count.desc()).all()
     model_list = [
         ModelResponse(
             id=model.id,
@@ -39,8 +43,8 @@ async def get_categories(db: Session = Depends(get_db)):
         ) for model in models
     ]
     
-    # 获取通用标签
-    tags = db.query(Tag).filter(Tag.type == 'tag').all()
+    # 获取通用标签（按专辑数量从大到小排序）
+    tags = db.query(Tag).filter(Tag.type == 'tag').order_by(Tag.album_count.desc()).all()
     tag_list = [
         TagResponse(
             id=tag.id,
@@ -59,9 +63,12 @@ async def get_categories(db: Session = Depends(get_db)):
     )
 
 @router.get("/org", response_model=List[OrganizationResponse])
-async def get_organizations(db: Session = Depends(get_db)):
-    """获取所有套图"""
-    orgs = db.query(Organization).all()
+async def get_organizations(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """获取所有套图（按专辑数量从大到小排序）"""
+    orgs = db.query(Organization).order_by(Organization.album_count.desc()).all()
     return [
         OrganizationResponse(
             id=org.id,
@@ -74,9 +81,12 @@ async def get_organizations(db: Session = Depends(get_db)):
     ]
 
 @router.get("/model", response_model=List[ModelResponse])
-async def get_models(db: Session = Depends(get_db)):
-    """获取所有模特"""
-    models = db.query(Model).all()
+async def get_models(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """获取所有模特（按专辑数量从大到小排序）"""
+    models = db.query(Model).order_by(Model.album_count.desc()).all()
     return [
         ModelResponse(
             id=model.id,
@@ -89,9 +99,12 @@ async def get_models(db: Session = Depends(get_db)):
     ]
 
 @router.get("/tag", response_model=List[TagResponse])
-async def get_tags(db: Session = Depends(get_db)):
-    """获取所有标签"""
-    tags = db.query(Tag).filter(Tag.type == 'tag').all()
+async def get_tags(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """获取所有标签（按专辑数量从大到小排序）"""
+    tags = db.query(Tag).filter(Tag.type == 'tag').order_by(Tag.album_count.desc()).all()
     return [
         TagResponse(
             id=tag.id,
