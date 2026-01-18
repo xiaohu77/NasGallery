@@ -17,8 +17,8 @@ async def get_categories(
     """
     获取分类树（用于侧边栏）
     """
-    # 获取套图（按专辑数量从大到小排序）
-    orgs = db.query(Organization).order_by(Organization.album_count.desc()).all()
+    # 获取套图（按专辑数量从大到小排序），剔除关联图集数为0的分类
+    orgs = db.query(Organization).filter(Organization.album_count > 0).order_by(Organization.album_count.desc()).all()
     org_list = [
         OrganizationResponse(
             id=org.id,
@@ -30,8 +30,8 @@ async def get_categories(
         ) for org in orgs
     ]
     
-    # 获取模特（按专辑数量从大到小排序）
-    models = db.query(Model).order_by(Model.album_count.desc()).all()
+    # 获取模特（按专辑数量从大到小排序），剔除关联图集数为0的分类
+    models = db.query(Model).filter(Model.album_count > 0).order_by(Model.album_count.desc()).all()
     model_list = [
         ModelResponse(
             id=model.id,
@@ -43,8 +43,8 @@ async def get_categories(
         ) for model in models
     ]
     
-    # 获取通用标签（按专辑数量从大到小排序）
-    tags = db.query(Tag).filter(Tag.type == 'tag').order_by(Tag.album_count.desc()).all()
+    # 获取通用标签（按专辑数量从大到小排序），剔除关联图集数为0的标签
+    tags = db.query(Tag).filter(Tag.type == 'tag', Tag.album_count > 0).order_by(Tag.album_count.desc()).all()
     tag_list = [
         TagResponse(
             id=tag.id,
@@ -67,8 +67,8 @@ async def get_organizations(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """获取所有套图（按专辑数量从大到小排序）"""
-    orgs = db.query(Organization).order_by(Organization.album_count.desc()).all()
+    """获取所有套图（按专辑数量从大到小排序），剔除关联图集数为0的分类"""
+    orgs = db.query(Organization).filter(Organization.album_count > 0).order_by(Organization.album_count.desc()).all()
     return [
         OrganizationResponse(
             id=org.id,
@@ -85,8 +85,8 @@ async def get_models(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """获取所有模特（按专辑数量从大到小排序）"""
-    models = db.query(Model).order_by(Model.album_count.desc()).all()
+    """获取所有模特（按专辑数量从大到小排序），剔除关联图集数为0的分类"""
+    models = db.query(Model).filter(Model.album_count > 0).order_by(Model.album_count.desc()).all()
     return [
         ModelResponse(
             id=model.id,
@@ -103,8 +103,8 @@ async def get_tags(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """获取所有标签（按专辑数量从大到小排序）"""
-    tags = db.query(Tag).filter(Tag.type == 'tag').order_by(Tag.album_count.desc()).all()
+    """获取所有标签（按专辑数量从大到小排序），剔除关联图集数为0的标签"""
+    tags = db.query(Tag).filter(Tag.type == 'tag', Tag.album_count > 0).order_by(Tag.album_count.desc()).all()
     return [
         TagResponse(
             id=tag.id,

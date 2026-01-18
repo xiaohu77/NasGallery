@@ -23,7 +23,6 @@ const SkeletonCard = (): JSX.Element => (
 
 const Home = (): JSX.Element => {
   const { id } = useParams<{ id?: string }>()
-  const location = useLocation()
   const navigate = useNavigate()
   const mainRef = useRef<HTMLDivElement>(null)
   
@@ -31,41 +30,10 @@ const Home = (): JSX.Element => {
   
   // 从URL参数获取搜索查询
   const searchQuery = useCallback(() => {
-    const params = new URLSearchParams(location.search)
+    const params = new URLSearchParams(window.location.search)
     return params.get('search') || ''
-  }, [location.search])
+  }, [])
   
-  // 从URL参数获取分类名称
-  const categoryName = useCallback(() => {
-    const params = new URLSearchParams(location.search)
-    return params.get('name') || null
-  }, [location.search])
-  
-  // 解析当前路由信息
-  const currentCategory = useCallback(() => {
-    const path = location.pathname
-    
-    // 首页（全部图集）
-    if (path === '/') {
-      return { type: null, id: null, name: null }
-    }
-    
-    // 解析路由：/org/123, /model/456, /tag/789
-    const segments = path.split('/')
-    if (segments.length >= 3) {
-      const type = segments[1] as 'org' | 'model' | 'tag'
-      const categoryId = parseInt(segments[2])
-      
-      // 从URL查询参数获取实际的分类名称
-      const name = categoryName()
-      
-      return { type, id: categoryId, name }
-    }
-    
-    return { type: null, id: null, name: null }
-  }, [location.pathname, categoryName])
-
-  const cat = currentCategory()
   const query = searchQuery()
   
   // 使用增强的Hook
@@ -80,7 +48,7 @@ const Home = (): JSX.Element => {
     refresh,
     scrollPosition,
     saveScrollPosition
-  } = useAlbums(cat.type, cat.id, pwaService, query)
+  } = useAlbums(null, null, pwaService, query)
 
   // 懒加载观察器
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -131,37 +99,11 @@ const Home = (): JSX.Element => {
     refresh()
   }
 
-  // 获取当前分类显示名称
-  const getCategoryDisplayName = useCallback(() => {
-    const cat = currentCategory()
-    const query = searchQuery()
-    
-    if (query) {
-      return `搜索结果: "${query}"`
-    }
-    
-    if (!cat.type) return '全部图集'
-    
-    const typeNames = {
-      org: '套图',
-      model: '模特',
-      tag: '标签'
-    }
-    return `${typeNames[cat.type]} - ${cat.name || cat.id}`
-  }, [currentCategory, searchQuery])
-
   return (
     <div className="py-4 px-4 sm:px-6 lg:px-8 hide-scrollbar" ref={mainRef} onScroll={(e) => {
       const target = e.currentTarget;
       saveScrollPosition(target.scrollTop);
     }}>
-      {/* 分类标题 */}
-      <div className="mb-4">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-          {getCategoryDisplayName()}
-        </h2>
-      </div>
-
       {/* 错误提示 */}
       {error && (!albums || albums.length === 0) && (
         <div className="text-center py-8">

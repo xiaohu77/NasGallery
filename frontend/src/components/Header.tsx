@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useUser } from '../contexts/UserContext'
-import { SunIcon, MoonIcon, UserIcon } from './icons'
+import { SunIcon, MoonIcon, UserIcon, SettingsIcon, LogoutIcon } from './icons'
 import { useState, useEffect, useCallback } from 'react'
 import SearchBox from './SearchBox'
 
@@ -60,14 +60,17 @@ const Header = () => {
     navigate('/')
   }
 
-  const handleUserPage = () => {
-    navigate('/user')
+  const handleSettings = () => {
+    navigate('/settings')
     setShowUserMenu(false)
   }
 
+
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
-      <div className="flex items-center justify-between h-12 px-3 sm:px-4 lg:px-6">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md">
+      <div className="flex items-center h-12 px-3 sm:px-4 lg:px-6">
+        {/* 左侧：Logo和侧边栏按钮 */}
         <div className="flex items-center gap-2">
           {isMobile && (
             <button
@@ -87,11 +90,14 @@ const Header = () => {
           </Link>
         </div>
         
-        {/* 搜索框 - 收窄宽度 */}
-        <div className="flex-1 max-w-[12rem] mx-3">
-          <SearchBox onSearch={handleSearch} placeholder="搜索..." />
+        {/* 中间：搜索框 */}
+        <div className={`flex-1 ${isMobile ? 'flex justify-center' : 'flex justify-end'} mx-3`}>
+          <div className={isMobile ? 'flex-1 max-w-[16rem]' : 'max-w-[12rem]'}>
+            <SearchBox onSearch={handleSearch} placeholder="搜索..." />
+          </div>
         </div>
         
+        {/* 右侧：主题和用户 */}
         <div className="flex items-center gap-1">
           <button
             onClick={toggleTheme}
@@ -127,15 +133,17 @@ const Header = () => {
                   </p>
                 </div>
                 <button
-                  onClick={handleUserPage}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={handleSettings}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                 >
-                  个人中心
+                  <SettingsIcon className="w-4 h-4" />
+                  设置
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                 >
+                  <LogoutIcon className="w-4 h-4" />
                   退出登录
                 </button>
               </div>

@@ -56,7 +56,7 @@ const SearchBox = ({ onSearch, placeholder = '搜索...', className = '' }: Sear
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-1.5 pl-8 pr-8 bg-white/80 dark:bg-black/80 border border-gray-200 dark:border-gray-700 rounded-full text-sm text-slate-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+        className="w-full px-2 py-1 pl-7 pr-7 bg-white/80 dark:bg-black/80 border border-gray-300 dark:border-gray-600 rounded-l-full rounded-r-full text-sm text-slate-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 transition-all"
       />
       <svg
         className="absolute left-2.5 w-3.5 h-3.5 text-gray-400"
