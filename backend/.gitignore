@@ -46,7 +46,7 @@ coverage.xml
 .ipynb_checkpoints
 
 # 数据库文件（除了示例）
-girlatlas.db
+data/girlatlas.db
 *.db
 *.sqlite
 *.sqlite3
@@ -70,6 +70,6 @@ logs/
 .idea/
 
 # 临时文件
-*.tmp
+*.data/tmp
 *.temp
 *~

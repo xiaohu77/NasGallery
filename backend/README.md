@@ -31,12 +31,12 @@ backend/
 │   ├── database.py            # 数据库连接
 │   ├── config.py              # 配置管理
 │   └── main.py                # 应用入口
-├── images/                    # CBZ文件目录
-├── tmp/cache/                 # 图片缓存
+├── data/images/                    # CBZ文件目录
+├── data/tmp/cache/                 # 图片缓存
 ├── requirements.txt           # 依赖列表
 ├── .env.example              # 环境变量示例
 ├── run.py                    # 启动脚本
-└── girlatlas.db              # SQLite数据库
+└── data/girlatlas.db              # SQLite数据库
 ```
 
 ## 数据模型
@@ -68,8 +68,8 @@ Album (N) ←→ (N) Tag (通过 AlbumTag)
 ### 图集相关
 - `GET /albums` - 图集列表（支持分页、筛选、搜索）
 - `GET /albums/{id}` - 图集详情
-- `GET /albums/{id}/images` - 图集图片列表
-- `GET /albums/{id}/images/{filename}` - 获取图片内容
+- `GET /albums/{id}/data/images` - 图集图片列表
+- `GET /albums/{id}/data/images/{filename}` - 获取图片内容
 - `POST /albums/{id}/refresh` - 刷新图集元数据
 
 ### 扫描相关
@@ -98,9 +98,9 @@ cp .env.example .env
 
 ### 3. 准备数据
 
-确保 `backend/images/` 目录存在，并放入 `.cbz` 文件：
+确保 `backend/data/images/` 目录存在，并放入 `.cbz` 文件：
 ```
-backend/images/
+backend/data/images/
 ├── xiuren/
 │   ├── XiuRen秀人网__No.10000__阿汁__75P.cbz
 │   └── XiuRen秀人网__No.10001__白茹雪__62P.cbz
@@ -154,13 +154,13 @@ curl http://localhost:8000/albums?page=1&size=20
 ### 获取图片
 ```bash
 # 图片列表
-curl http://localhost:8000/albums/1/images
+curl http://localhost:8000/albums/1/data/images
 
 # 单张图片
-curl http://localhost:8000/albums/1/images/001.jpg
+curl http://localhost:8000/albums/1/data/images/001.jpg
 
 # 缩放图片
-curl http://localhost:8000/albums/1/images/001.jpg?width=800&height=600
+curl http://localhost:8000/albums/1/data/images/001.jpg?width=800&height=600
 ```
 
 ## 标签解析规则
@@ -203,7 +203,7 @@ python -c "from app.database import init_db; init_db()"
 curl -X POST http://localhost:8000/scan/sync
 
 # 查看数据
-sqlite3 girlatlas.db "SELECT * FROM albums;"
+sqlite3 data/girlatlas.db "SELECT * FROM albums;"
 ```
 
 ## 生产部署
@@ -227,12 +227,12 @@ gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| DATABASE_URL | sqlite:///./girlatlas.db | 数据库连接 |
+| DATABASE_URL | sqlite:///./data/girlatlas.db | 数据库连接 |
 | APP_NAME | GirlAtlas API | 应用名称 |
 | APP_VERSION | 0.1.0 | 版本号 |
 | DEBUG | True | 调试模式 |
-| IMAGES_DIR | ../images | 图片目录 |
-| CACHE_DIR | ./tmp/cache | 缓存目录 |
+| IMAGES_DIR | ../data/images | 图片目录 |
+| CACHE_DIR | ./data/tmp/cache | 缓存目录 |
 | SCAN_INTERVAL | 3600 | 扫描间隔(秒) |
 
 ## 许可证

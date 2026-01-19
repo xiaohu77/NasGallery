@@ -28,6 +28,8 @@ pytest tests/ -v
 pytest tests/test_file.py::test_function -v
 ```
 
+**注意**: 管理员账户会在应用启动时自动初始化或更新。如果管理员账户不存在，会自动创建；如果已存在，会根据环境变量更新密码。
+
 ### 前端 (React/TypeScript/Vite)
 ```bash
 cd frontend
@@ -312,9 +314,9 @@ backend/
 │   ├── database.py
 │   ├── config.py
 │   └── main.py
-├── images/          # CBZ文件目录
-├── tmp/             # 缓存和封面
-└── girlatlas.db    # SQLite数据库
+├── data/images/          # CBZ文件目录
+├── data/tmp/             # 缓存和封面
+└── data/girlatlas.db    # SQLite数据库
 ```
 
 ### 前端
@@ -352,17 +354,17 @@ frontend/
 
 ### 后端 (.env)
 ```bash
-DATABASE_URL=sqlite:///./girlatlas.db
+DATABASE_URL=sqlite:///./data/girlatlas.db
 APP_NAME=GirlAtlas API
 APP_VERSION=0.1.0
 DEBUG=True
-IMAGES_DIR=./images
-CACHE_DIR=./tmp/cache
+IMAGES_DIR=./data/images
+CACHE_DIR=./data/tmp/cache
 ```
 
 ### 前端 (.env)
 ```bash
-VITE_API_BASE=https://back.xiaohu777.cn
+VITE_API_BASE=http://localhost:8000
 ```
 
 ## 常见模式
@@ -426,7 +428,7 @@ refactor/api-response-types
 tail -f app.log
 
 # 调试SQL查询
-echo "SELECT * FROM albums;" | sqlite3 girlatlas.db
+echo "SELECT * FROM albums;" | sqlite3 data/girlatlas.db
 
 # 测试API
 curl -v http://localhost:8000/health

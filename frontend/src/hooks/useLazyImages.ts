@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ImageItem } from '../types/album';
 import { PWAService } from '../services/pwaService';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://back.xiaohu777.cn';
+const API_BASE = import.meta.env.DEV
+  ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
+  : window.location.origin;
 
 interface LazyImagesResult {
   images: ImageItem[];

@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  girlatlas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: girlatlas
+    ports:
+      - "8000:8000"
+    volumes:
+      # 数据库持久化
+      - ./data/:/app/data/
+    environment:
+      - DATABASE_URL=sqlite:///./data/girlatlas.db
+      - APP_NAME=GirlAtlas
+      - APP_VERSION=0.1.0
+      - DEBUG=False
+      - IMAGES_DIR=/app/data/images
+      - CACHE_DIR=/app/data/tmp/cache
+      - COVERS_DIR=/app/data/tmp/covers
+      - SECRET_KEY=${SECRET_KEY:-girlatlas-secret-key-change-in-production}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

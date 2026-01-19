@@ -10,7 +10,7 @@ Thumbs.db
 desktop.ini
 
 # 临时文件
-*.tmp
+*.data/tmp
 *.temp
 *~
 
@@ -84,14 +84,14 @@ coverage.xml
 .ipynb_checkpoints
 
 # Backend 数据库文件（除了示例）
-backend/girlatlas.db
+backend/data/girlatlas.db
 *.db
 *.sqlite
 *.sqlite3
 
 # Backend 上传/缓存目录
-backend/images
-backend/tmp
+backend/data/images
+backend/data/tmp
 backend/venv
 
 # ============================================
@@ -140,7 +140,7 @@ pnpm-lock.yaml
 # ============================================
 
 # 图片文件（如果不需要版本控制）
-# backend/images/xiuren/*.cbz
+# backend/data/images/xiuren/*.cbz
 
 # 临时生成的文件
 *.bak

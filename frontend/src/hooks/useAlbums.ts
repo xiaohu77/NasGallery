@@ -3,7 +3,9 @@ import { PWAService } from '../services/pwaService';
 import { AlbumSummary, AlbumCard } from '../types/album';
 import { sessionState, CacheKeys } from '../utils/cache';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://back.xiaohu777.cn';
+const API_BASE = import.meta.env.DEV
+  ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
+  : window.location.origin;
 
 export const useAlbums = (
   categoryType: 'org' | 'model' | 'tag' | null,

@@ -3,7 +3,11 @@
  * 在所有API请求中验证认证令牌
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://back.xiaohu777.cn';
+// 动态获取当前域名作为API基础URL
+// 在开发环境使用环境变量，生产环境使用当前域名
+const API_BASE = import.meta.env.DEV
+  ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
+  : window.location.origin;
 
 /**
  * 获取认证令牌

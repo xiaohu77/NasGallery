@@ -8,7 +8,6 @@ import PWAInstallPrompt from './components/PWAInstallPrompt'
 import Home from './pages/Home'
 import AlbumDetail from './pages/AlbumDetail'
 import Login from './pages/Login'
-import Register from './pages/Register'
 import Settings from './pages/Settings'
 
 // 创建一个包装组件来管理 Home 页面的 key
@@ -69,7 +68,6 @@ function App(): JSX.Element {
           <Routes>
             {/* 公开路由 */}
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             
             {/* 需要登录的路由 */}
             <Route

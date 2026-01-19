@@ -4,7 +4,9 @@ import { PWAService } from '../services/pwaService'
 import { AlbumSummary, AlbumCard } from '../types/album'
 import { useAlbums } from '../hooks/useAlbums'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://back.xiaohu777.cn'
+const API_BASE = import.meta.env.DEV
+  ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
+  : window.location.origin;
 
 const SkeletonCard = (): JSX.Element => (
   <div className="card animate-pulse">

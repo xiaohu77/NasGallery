@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.schemas import (
-    UserCreate,
     UserLogin,
     UserResponse,
     Token,
@@ -76,51 +75,6 @@ def get_current_user(
         )
     
     return user
-
-
-@router.post("/register", response_model=Token)
-async def register(user_create: UserCreate, db: Session = Depends(get_db)):
-    """用户注册"""
-    # 检查用户名是否已存在
-    existing_user = db.query(User).filter(User.username == user_create.username).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered",
-        )
-    
-    # 检查邮箱是否已存在
-    existing_email = db.query(User).filter(User.email == user_create.email).first()
-    if existing_email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered",
-        )
-    
-    # 创建用户
-    hashed_password = get_password_hash(user_create.password)
-    user = User(
-        username=user_create.username,
-        email=user_create.email,
-        hashed_password=hashed_password,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    # 创建JWT令牌
-    access_token = create_access_token(data={"sub": user.username})
-    
-    return Token(
-        access_token=access_token,
-        user=UserResponse(
-            id=user.id,
-            username=user.username,
-            email=user.email,
-            created_at=user.created_at,
-            is_admin=user.is_admin,
-        ),
-    )
 
 
 @router.post("/login", response_model=Token)

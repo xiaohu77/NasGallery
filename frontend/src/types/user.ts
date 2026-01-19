@@ -14,12 +14,6 @@ export interface LoginRequest {
   password: string
 }
 
-export interface RegisterRequest {
-  username: string
-  email: string
-  password: string
-}
-
 export interface AuthResponse {
   access_token: string
   token_type: string
@@ -31,7 +25,6 @@ export interface UserContextType {
   token: string | null
   isLoading: boolean
   login: (username: string, password: string) => Promise<void>
-  register: (username: string, email: string, password: string) => Promise<void>
   logout: () => void
   isAuthenticated: boolean
 }

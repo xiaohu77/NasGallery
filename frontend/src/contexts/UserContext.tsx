@@ -2,8 +2,10 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { ReactNode } from 'react'
 import { User, UserContextType } from '../types/user'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://back.xiaohu777.cn'
-
+const API_BASE = import.meta.env.DEV
+  ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
+  : window.location.origin;
+  
 const UserContext = createContext<UserContextType | null>(null)
 
 export const UserProvider = ({ children }: { children: ReactNode }): JSX.Element => {
@@ -60,35 +62,7 @@ export const UserProvider = ({ children }: { children: ReactNode }): JSX.Element
     }
   }, [])
 
-  const register = useCallback(async (username: string, email: string, password: string) => {
-    try {
-      const response = await fetch(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ username, email, password })
-      })
 
-      if (!response.ok) {
-        throw new Error('注册失败')
-      }
-
-      const data = await response.json()
-      const { access_token, user: userData } = data
-
-      // 保存到状态
-      setToken(access_token)
-      setUser(userData)
-
-      // 保存到 localStorage
-      localStorage.setItem('auth_token', access_token)
-      localStorage.setItem('auth_user', JSON.stringify(userData))
-    } catch (error) {
-      console.error('Register error:', error)
-      throw error
-    }
-  }, [])
 
   const logout = useCallback(() => {
     setUser(null)
@@ -104,7 +78,6 @@ export const UserProvider = ({ children }: { children: ReactNode }): JSX.Element
     token,
     isLoading,
     login,
-    register,
     logout,
     isAuthenticated
   }

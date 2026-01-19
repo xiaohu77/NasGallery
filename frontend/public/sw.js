@@ -19,7 +19,10 @@ self.addEventListener('install', (event) => {
   self.skipWaiting(); // 立即激活新版本
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(CORE_CACHE_FILES);
+      return cache.addAll(CORE_CACHE_FILES).catch((error) => {
+        // 如果缓存核心资源失败，记录错误但不阻止Service Worker安装
+        console.log('Service Worker: 缓存核心资源失败，但Service Worker仍会安装:', error);
+      });
     })
   );
 });
@@ -58,8 +61,8 @@ self.addEventListener('fetch', (event) => {
 
   // 分类、列表API识别 - 网络优先
   const isDataAPIRequest = (
-    // 生产环境域名
-    (url.origin.includes('back.xiaohu777.cn') ||
+    // 检查是否是当前域名的API请求
+    (url.origin === self.location.origin ||
      url.origin.includes('localhost') ||
      url.origin.includes('127.0.0.1')) &&
     // 数据API路径模式（排除详情页图片列表）
@@ -70,8 +73,8 @@ self.addEventListener('fetch', (event) => {
   );
   // 图片API识别 - 缓存优先
   const isImageAPIRequest = (
-    // 生产环境域名
-    (url.origin.includes('back.xiaohu777.cn') ||
+    // 检查是否是当前域名的API请求
+    (url.origin === self.location.origin ||
      url.origin.includes('localhost') ||
      url.origin.includes('127.0.0.1')) &&
     // 图片API路径模式
@@ -87,8 +90,8 @@ self.addEventListener('fetch', (event) => {
   
   // 详情页图片列表API识别 - 缓存优先
   const isAlbumImagesAPIRequest = (
-    // 生产环境域名
-    (url.origin.includes('back.xiaohu777.cn') ||
+    // 检查是否是当前域名的API请求
+    (url.origin === self.location.origin ||
      url.origin.includes('localhost') ||
      url.origin.includes('127.0.0.1')) &&
     // 详情页图片列表API路径模式（精确匹配）

@@ -94,17 +94,7 @@ const Login = (): JSX.Element => {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm">
-            <span className="text-gray-600 dark:text-gray-400">
-              还没有账号？{' '}
-            </span>
-            <Link
-              to="/register"
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-            >
-              立即注册
-            </Link>
-          </div>
+
         </div>
       </div>
     </div>
