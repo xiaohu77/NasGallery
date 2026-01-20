@@ -4,10 +4,6 @@ import { PWAService } from '../services/pwaService'
 import { AlbumSummary, AlbumCard } from '../types/album'
 import { useAlbums } from '../hooks/useAlbums'
 
-const API_BASE = import.meta.env.DEV
-  ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
-  : window.location.origin;
-
 const SkeletonCard = (): JSX.Element => (
   <div className="card animate-pulse">
     <div className="relative overflow-hidden aspect-[2/3] bg-gray-200 dark:bg-gray-800">
@@ -25,6 +21,7 @@ const SkeletonCard = (): JSX.Element => (
 
 const Home = (): JSX.Element => {
   const { id } = useParams<{ id?: string }>()
+  const location = useLocation()
   const navigate = useNavigate()
   const mainRef = useRef<HTMLDivElement>(null)
   
@@ -32,11 +29,28 @@ const Home = (): JSX.Element => {
   
   // 从URL参数获取搜索查询
   const searchQuery = useCallback(() => {
-    const params = new URLSearchParams(window.location.search)
+    const params = new URLSearchParams(location.search)
     return params.get('search') || ''
-  }, [])
+  }, [location.search])
   
   const query = searchQuery()
+  
+  // 从URL路径提取分类类型和ID
+  const getCategoryInfo = useCallback(() => {
+    const path = location.pathname
+    
+    if (path.startsWith('/org/')) {
+      return { type: 'org' as const, categoryId: parseInt(id || '0') }
+    } else if (path.startsWith('/model/')) {
+      return { type: 'model' as const, categoryId: parseInt(id || '0') }
+    } else if (path.startsWith('/tag/')) {
+      return { type: 'tag' as const, categoryId: parseInt(id || '0') }
+    }
+    
+    return { type: null, categoryId: null }
+  }, [location.pathname, id])
+  
+  const { type: categoryType, categoryId } = getCategoryInfo()
   
   // 使用增强的Hook
   const {
@@ -50,7 +64,7 @@ const Home = (): JSX.Element => {
     refresh,
     scrollPosition,
     saveScrollPosition
-  } = useAlbums(null, null, pwaService, query)
+  } = useAlbums(categoryType, categoryId, pwaService, query)
 
   // 懒加载观察器
   const observerRef = useRef<IntersectionObserver | null>(null)

@@ -89,7 +89,12 @@ export const useAlbums = (
     let coverImage = album.cover_url || '';
 
     if (coverImage && coverImage.startsWith('/')) {
-      coverImage = `${API_BASE}${coverImage}`;
+      // 如果封面URL以 /covers/ 开头，添加 /api 前缀
+      if (coverImage.startsWith('/covers/')) {
+        coverImage = `${API_BASE}/api${coverImage}`;
+      } else {
+        coverImage = `${API_BASE}${coverImage}`;
+      }
     }
 
     return {

@@ -9,7 +9,7 @@ from app.schemas import ScanResponse
 from app.services.scanner import scan_albums, cleanup_deleted_albums, cleanup_orphaned_data, get_orphaned_stats
 from app.api.endpoints.auth import get_current_user
 
-router = APIRouter(prefix="/scan", tags=["scan"])
+router = APIRouter(prefix="/api/scan", tags=["scan"])
 
 def perform_scan(db: Session, scan_path: Path = None):
     """执行扫描任务"""

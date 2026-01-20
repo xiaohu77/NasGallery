@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useUser } from '../contexts/UserContext'
 
 const Login = (): JSX.Element => {

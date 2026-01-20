@@ -34,7 +34,7 @@ export const UserProvider = ({ children }: { children: ReactNode }): JSX.Element
 
   const login = useCallback(async (username: string, password: string) => {
     try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

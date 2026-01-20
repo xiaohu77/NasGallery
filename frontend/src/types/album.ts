@@ -127,3 +127,32 @@ export interface TagResponse {
   album_count: number
   created_at: string
 }
+
+// 扫描响应类型
+export interface ScanResponse {
+  success: boolean
+  message: string
+  scanned_files: number
+  new_albums: number
+  updated_albums: number
+}
+
+// 扫描统计信息类型
+export interface ScanStats {
+  total_albums: number
+  total_images: number
+  total_size_mb: number
+  recent_scans_today: number
+  organizations: number
+  models: number
+  tags: number
+}
+
+// 孤儿数据统计类型
+export interface OrphanStats {
+  orphaned_album_tags: number
+  orphan_tags: number
+  orphan_orgs: number
+  orphan_models: number
+  total_orphans: number
+}

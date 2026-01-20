@@ -32,12 +32,19 @@ export const useLazyImages = (
   const isLoadingMore = useRef<boolean>(false);
 
   const transformImages = useCallback((items: any[], albumId: string, startIndex: number): ImageItem[] => {
-    return items.map((img, index) => ({
-      id: `${albumId}-${startIndex + index + 1}`,
-      url: `${API_BASE}${img.url}`,
-      title: `图片 ${startIndex + index + 1}`,
-      description: img.name
-    }));
+    return items.map((img, index) => {
+      // 确保URL以 /api/ 开头
+      let imageUrl = img.url;
+      if (!imageUrl.startsWith('/api/')) {
+        imageUrl = `/api${imageUrl}`;
+      }
+      return {
+        id: `${albumId}-${startIndex + index + 1}`,
+        url: `${API_BASE}${imageUrl}`,
+        title: `图片 ${startIndex + index + 1}`,
+        description: img.name
+      };
+    });
   }, []);
 
   const loadImages = useCallback(async (page: number = 1, isRefresh: boolean = false) => {

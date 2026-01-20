@@ -30,7 +30,7 @@ export const useAlbumData = (id: string | undefined, pwaService: PWAService) => 
           title: albumDetail.title,
           description: albumDetail.description || '暂无描述',
           coverImage: albumDetail.cover_image
-            ? `${API_BASE}/albums/${albumDetail.id}/images/${albumDetail.cover_image}`
+            ? `${API_BASE}/api/albums/${albumDetail.id}/images/${albumDetail.cover_image}`
             : '',
           imageCount: albumDetail.image_count || 0
         };
@@ -64,7 +64,7 @@ export const useAlbumData = (id: string | undefined, pwaService: PWAService) => 
         title: albumDetail.title,
         description: albumDetail.description || '暂无描述',
         coverImage: albumDetail.cover_image
-          ? `${API_BASE}/albums/${albumDetail.id}/images/${albumDetail.cover_image}`
+          ? `${API_BASE}/api/albums/${albumDetail.id}/images/${albumDetail.cover_image}`
           : '',
         imageCount: albumDetail.image_count || 0
       };

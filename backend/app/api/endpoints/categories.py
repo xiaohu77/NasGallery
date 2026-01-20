@@ -7,7 +7,7 @@ from app.models import Organization, Model, Tag, User
 from app.schemas import CategoryTree, OrganizationResponse, ModelResponse, TagResponse
 from app.api.endpoints.auth import get_current_user
 
-router = APIRouter(prefix="/categories", tags=["categories"])
+router = APIRouter(prefix="/api/categories", tags=["categories"])
 
 @router.get("/", response_model=CategoryTree)
 async def get_categories(

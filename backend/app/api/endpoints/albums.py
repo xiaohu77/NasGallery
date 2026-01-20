@@ -14,7 +14,7 @@ from app.config import settings
 from app.api.deps import DependsDB
 from app.api.endpoints.auth import get_current_user
 
-router = APIRouter(prefix="/albums", tags=["albums"])
+router = APIRouter(prefix="/api/albums", tags=["albums"])
 
 @router.get("/", response_model=PagedResponse)
 async def get_albums(
@@ -342,7 +342,7 @@ async def get_image_content(
     """
     获取图片内容（支持缩放）
     优先级: 文件缓存 > 数据库 > CBZ文件处理
-    """    
+    """
     # 1. 优先从文件缓存读取
     cache_dir = cache_service.extracted_images_dir / str(album_id)
     cache_file = cache_dir / filename
@@ -357,7 +357,14 @@ async def get_image_content(
                 image_data = ArchiveService.resize_image(image_data, width, height)
             
             from fastapi.responses import Response
-            return Response(content=image_data, media_type="image/jpeg")
+            return Response(
+                content=image_data,
+                media_type="image/jpeg",
+                headers={
+                    "Cache-Control": "public, max-age=31536000",  # 1年缓存
+                    "ETag": f'"{cache_file.stat().st_mtime}"'
+                }
+            )
         except Exception as e:
             print(f"❌ [文件缓存] 读取失败: {e}")
     
@@ -388,7 +395,14 @@ async def get_image_content(
         image_data = ArchiveService.resize_image(image_data, width, height)
     
     from fastapi.responses import Response
-    return Response(content=image_data, media_type="image/jpeg")
+    return Response(
+        content=image_data,
+        media_type="image/jpeg",
+        headers={
+            "Cache-Control": "public, max-age=31536000",  # 1年缓存
+            "ETag": f'"{cache_file.stat().st_mtime}"'
+        }
+    )
 
 @router.post("/{album_id}/refresh")
 async def refresh_album(

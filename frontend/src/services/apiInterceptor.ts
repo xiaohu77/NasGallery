@@ -25,7 +25,7 @@ function requiresAuth(url: string): boolean {
   const urlObj = new URL(url);
   
   // 认证相关端点不需要认证
-  const authEndpoints = ['/auth/login', '/auth/register'];
+  const authEndpoints = ['/auth/login'];
   if (authEndpoints.some(endpoint => urlObj.pathname.includes(endpoint))) {
     return false;
   }

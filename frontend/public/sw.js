@@ -66,8 +66,10 @@ self.addEventListener('fetch', (event) => {
      url.origin.includes('localhost') ||
      url.origin.includes('127.0.0.1')) &&
     // 数据API路径模式（排除详情页图片列表）
-    (url.pathname.startsWith('/albums/') && !url.pathname.includes('/images') ||
-     url.pathname.startsWith('/categories/') ||
+    (url.pathname.startsWith('/api/albums/') && !url.pathname.includes('/images') ||
+     url.pathname.startsWith('/api/categories/') ||
+     url.pathname.startsWith('/api/scan/') ||
+     url.pathname.startsWith('/api/auth/') ||
      url.pathname.startsWith('/health') ||
      url.pathname === '/')
   );
@@ -78,8 +80,8 @@ self.addEventListener('fetch', (event) => {
      url.origin.includes('localhost') ||
      url.origin.includes('127.0.0.1')) &&
     // 图片API路径模式
-    (url.pathname.startsWith('/covers/') ||
-     (url.pathname.includes('/images/') && (url.pathname.endsWith('.jpg') || url.pathname.endsWith('.png') || url.pathname.endsWith('.jpeg'))))
+    (url.pathname.startsWith('/api/covers/') ||
+     (url.pathname.includes('/api/albums/') && url.pathname.includes('/images/') && (url.pathname.endsWith('.jpg') || url.pathname.endsWith('.png') || url.pathname.endsWith('.jpeg'))))
   );
   
 
