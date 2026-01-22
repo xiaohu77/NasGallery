@@ -1,6 +1,6 @@
 {
-  "name": "GirlAtlas",
-  "short_name": "GirlAtlas",
+  "name": "NasGallery",
+  "short_name": "NasGallery",
   "description": "图集",
   "start_url": "/",
   "display": "standalone",

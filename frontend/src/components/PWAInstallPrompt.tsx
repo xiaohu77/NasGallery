@@ -68,7 +68,7 @@ const PWAInstallPrompt = () => {
         <span className="text-xl">📱</span>
         <div className="flex-1">
           <div className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'} font-bold text-base mb-0.5`}>
-            安装 GirlAtlas
+            安装 NasGallery
           </div>
           <div className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} text-sm`}>
             离线浏览图集，更快的访问速度

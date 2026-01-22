@@ -1,4 +1,4 @@
-# GirlAtlas Project .gitignore
+# NasGallery Project .gitignore
 
 # ============================================
 # 通用忽略规则
@@ -84,7 +84,7 @@ coverage.xml
 .ipynb_checkpoints
 
 # Backend 数据库文件（除了示例）
-backend/data/girlatlas.db
+backend/data/nasgallery.db
 *.db
 *.sqlite
 *.sqlite3

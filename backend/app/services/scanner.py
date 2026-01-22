@@ -465,7 +465,7 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
     scan_logger = ScanLogger()
     
     # 文件锁路径
-    lock_file = Path("/tmp/girlatlas_scan.lock")
+    lock_file = Path("/tmp/nasgallery_scan.lock")
     
     def acquire_lock():
         if not use_lock:
@@ -509,8 +509,12 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
                         file_path = Path(root) / file
                         cbz_files.append(file_path)
             
+            # 按文件修改时间从前到后排序（最旧的文件在前）
+            # 这样确保新增文件按修改时间顺序依次入库，最新的文件入库时间也是最新的
+            cbz_files.sort(key=lambda f: f.stat().st_mtime)
+            
             existing_files = {str(f) for f in cbz_files}
-            logger.info(f"📁 发现 {len(cbz_files)} 个CBZ文件（包括软连接中的内容）")
+            logger.info(f"📁 发现 {len(cbz_files)} 个CBZ文件（包括软连接中的内容），已按修改时间排序")
         except Exception as e:
             scan_logger.log_error("文件扫描", f"无法访问目录: {e}")
             return scan_logger.get_summary()

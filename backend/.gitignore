@@ -46,7 +46,7 @@ coverage.xml
 .ipynb_checkpoints
 
 # 数据库文件（除了示例）
-data/girlatlas.db
+data/nasgallery.db
 *.db
 *.sqlite
 *.sqlite3

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-GirlAtlas 后端服务启动脚本
+NasGallery 后端服务启动脚本
 """
 import uvicorn
 from app.config import settings

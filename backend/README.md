@@ -1,4 +1,4 @@
-# GirlAtlas 后端服务
+# NasGallery 后端服务
 
 基于 FastAPI 的图集管理后端服务，支持 CBZ 文件解析、标签分类和图片服务。
 
@@ -36,7 +36,7 @@ backend/
 ├── requirements.txt           # 依赖列表
 ├── .env.example              # 环境变量示例
 ├── run.py                    # 启动脚本
-└── data/girlatlas.db              # SQLite数据库
+└── data/nasgallery.db              # SQLite数据库
 ```
 
 ## 数据模型
@@ -203,7 +203,7 @@ python -c "from app.database import init_db; init_db()"
 curl -X POST http://localhost:8000/scan/sync
 
 # 查看数据
-sqlite3 data/girlatlas.db "SELECT * FROM albums;"
+sqlite3 data/nasgallery.db "SELECT * FROM albums;"
 ```
 
 ## 生产部署
@@ -227,8 +227,8 @@ gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| DATABASE_URL | sqlite:///./data/girlatlas.db | 数据库连接 |
-| APP_NAME | GirlAtlas API | 应用名称 |
+| DATABASE_URL | sqlite:///./data/nasgallery.db | 数据库连接 |
+| APP_NAME | NasGallery API | 应用名称 |
 | APP_VERSION | 0.1.0 | 版本号 |
 | DEBUG | True | 调试模式 |
 | IMAGES_DIR | ../data/images | 图片目录 |

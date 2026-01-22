@@ -86,7 +86,7 @@ const Header = () => {
             </button>
           )}
           <Link to="/" className="text-sm font-bold text-slate-900 dark:text-white hover:opacity-80 transition-opacity">
-            GirlAtlas
+            NasGallery
           </Link>
         </div>
         

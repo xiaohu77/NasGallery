@@ -1,7 +1,7 @@
-# GirlAtlas AGENTS.md
+# NasGallery AGENTS.md
 
 ## 项目概述
-GirlAtlas是一个双栈应用，包含FastAPI后端和React/TypeScript前端，用于管理和查看CBZ压缩包格式的图片档案。
+NasGallery是一个双栈应用，包含FastAPI后端和React/TypeScript前端，用于管理和查看CBZ压缩包格式的图片档案。
 
 ## 构建/测试命令
 
@@ -316,7 +316,7 @@ backend/
 │   └── main.py
 ├── data/images/          # CBZ文件目录
 ├── data/tmp/             # 缓存和封面
-└── data/girlatlas.db    # SQLite数据库
+└── data/nasgallery.db    # SQLite数据库
 ```
 
 ### 前端
@@ -354,8 +354,8 @@ frontend/
 
 ### 后端 (.env)
 ```bash
-DATABASE_URL=sqlite:///./data/girlatlas.db
-APP_NAME=GirlAtlas API
+DATABASE_URL=sqlite:///./data/nasgallery.db
+APP_NAME=NasGallery API
 APP_VERSION=0.1.0
 DEBUG=True
 IMAGES_DIR=./data/images
@@ -428,7 +428,7 @@ refactor/api-response-types
 tail -f app.log
 
 # 调试SQL查询
-echo "SELECT * FROM albums;" | sqlite3 data/girlatlas.db
+echo "SELECT * FROM albums;" | sqlite3 data/nasgallery.db
 
 # 测试API
 curl -v http://localhost:8000/health

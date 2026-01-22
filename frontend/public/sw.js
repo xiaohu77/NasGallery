@@ -1,6 +1,6 @@
 // Service Worker 版本号
 const CACHE_VERSION = 'v1.0.0';
-const CACHE_NAME = `girlatlas-${CACHE_VERSION}`;
+const CACHE_NAME = `nasgallery-${CACHE_VERSION}`;
 
 // 需要缓存的核心资源
 const CORE_CACHE_FILES = [
@@ -33,7 +33,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName.startsWith('girlatlas-')) {
+          if (cacheName !== CACHE_NAME && cacheName.startsWith('nasgallery-')) {
             return caches.delete(cacheName);
           }
         })
