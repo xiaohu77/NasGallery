@@ -8,7 +8,7 @@ from typing import Optional
 
 from app.config import settings
 from app.database import init_db, SessionLocal
-from app.api.endpoints import albums, categories, scan, auth, static
+from app.api.endpoints import albums, categories, scan, auth, static, thumbs
 from app.models import User
 from passlib.context import CryptContext
 
@@ -25,10 +25,6 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://dev.xiaohu777.cn",
-        "https://dev.xiaohu777.cn",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
         "http://localhost:8000",
         "http://127.0.0.1:8000"
     ],
@@ -46,6 +42,7 @@ app.include_router(categories.router)
 app.include_router(scan.router)
 app.include_router(auth.router)
 app.include_router(static.router)
+app.include_router(thumbs.router)
 
 # 挂载静态文件目录（前端构建产物）
 try:
@@ -63,9 +60,18 @@ except Exception as e:
 async def startup_event():
     """应用启动时初始化"""
     # 确保必要的目录存在
+    # 缓存目录
     settings.CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    settings.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     settings.COVERS_DIR.mkdir(parents=True, exist_ok=True)
+    settings.THUMBNAIL_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # 图片目录（包括子目录）
+    settings.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    settings.COMIC_DIR.mkdir(parents=True, exist_ok=True)
+    settings.COSPLAY_CHARACTER_DIR.mkdir(parents=True, exist_ok=True)
+    settings.COSPLAY_ORG_DIR.mkdir(parents=True, exist_ok=True)
+    settings.PHOTOBOOK_CHARACTER_DIR.mkdir(parents=True, exist_ok=True)
+    settings.PHOTOBOOK_ORG_DIR.mkdir(parents=True, exist_ok=True)
     
     # 初始化数据库
     init_db()
@@ -79,6 +85,7 @@ async def startup_event():
     print(f"数据库: {settings.DATABASE_URL}")
     print(f"图片目录: {settings.IMAGES_DIR}")
     print(f"封面目录: {settings.COVERS_DIR}")
+    print(f"缩略图目录: {settings.THUMBNAIL_DIR}")
     print(f"缓存目录: {settings.CACHE_DIR}")
     print(f"缓存服务已启动，定时清理任务运行中...")
 

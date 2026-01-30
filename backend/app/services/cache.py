@@ -173,7 +173,7 @@ class CacheService:
             # 获取所有图片文件
             images = []
             for file in cache_dir.iterdir():
-                if file.is_file() and file.suffix.lower() in ('.jpg', '.jpeg', '.png'):
+                if file.is_file() and file.suffix.lower() in ('.jpg', '.jpeg', '.png', '.webp'):
                     images.append(file.name)
             
             return sorted(images) if images else None

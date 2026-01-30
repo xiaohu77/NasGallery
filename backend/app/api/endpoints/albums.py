@@ -59,8 +59,8 @@ async def get_albums(
         
         # 优先使用预提取的封面路径
         if album.cover_path:
-            # 使用静态文件URL（基于CBZ文件名）
-            cover_url = f"/covers/{Path(album.file_path).stem}.jpg"
+            # 使用静态文件URL（基于CBZ文件名，WebP 封面）
+            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
         elif album.cover_image:
             # 降级：使用API接口（兼容旧数据）
             cover_url = f"/albums/{album.id}/images/{album.cover_image}"
@@ -120,7 +120,7 @@ async def get_albums_by_organization(
         cover_url = None
         
         if album.cover_path:
-            cover_url = f"/covers/{Path(album.file_path).stem}.jpg"
+            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
         elif album.cover_image:
             cover_url = f"/albums/{album.id}/images/{album.cover_image}"
         
@@ -179,7 +179,7 @@ async def get_albums_by_model(
         cover_url = None
         
         if album.cover_path:
-            cover_url = f"/covers/{Path(album.file_path).stem}.jpg"
+            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
         elif album.cover_image:
             cover_url = f"/albums/{album.id}/images/{album.cover_image}"
         
@@ -238,7 +238,7 @@ async def get_albums_by_tag(
         cover_url = None
         
         if album.cover_path:
-            cover_url = f"/covers/{Path(album.file_path).stem}.jpg"
+            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
         elif album.cover_image:
             cover_url = f"/albums/{album.id}/images/{album.cover_image}"
         

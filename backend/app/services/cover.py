@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Optional
 from datetime import datetime
 import logging
+import io
+from PIL import Image
 
 from .archive import ArchiveService
 
@@ -11,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class CoverService:
-    """封面图管理服务 - 使用CBZ文件名直接命名封面"""
+    """封面图管理服务 - 使用CBZ文件名直接命名封面
+    封面输出为 WebP，尺寸固定为 600x900，并进行裁剪填充（crop to fill）"""
     
     def __init__(self, covers_dir: Path):
         self.covers_dir = covers_dir
@@ -20,52 +23,49 @@ class CoverService:
     
     def extract_cover_to_folder(self, cbz_path: Path, cover_filename: str, album_id: int) -> Optional[Path]:
         """
-        从CBZ提取封面到 tmp/cover/{cbz_stem}.jpg
-        
-        Args:
-            cbz_path: CBZ文件路径
-            cover_filename: 封面在CBZ中的文件名
-            album_id: 图集ID
-        
-        Returns:
-            封面文件路径，失败返回None
+        从CBZ提取封面并转换为固定尺寸的 WebP（600x900），保存为 {cbz_stem}.webp
         """
         try:
-            # 使用CBZ文件名作为封面文件名（去掉.cbz扩展名，添加.jpg）
-            cover_name = f"{cbz_path.stem}.jpg"
+            # 使用 CBZ stem 作为封面文件名，输出为 WEBP
+            cover_name = f"{cbz_path.stem}.webp"
             cover_path = self.covers_dir / cover_name
             
-            # 检查是否需要更新（基于CBZ文件修改时间）
+            # 检查是否需要更新（基于 CBZ 文件修改时间）
             if cover_path.exists():
                 cbz_mtime = cbz_path.stat().st_mtime
                 cover_mtime = cover_path.stat().st_mtime
-                
-                # 如果封面比CBZ新，且文件大小合理，跳过
                 if cover_mtime >= cbz_mtime and cover_path.stat().st_size > 1000:
                     logger.debug(f"封面已是最新: {cover_path}")
                     return cover_path
             
-            # 从CBZ提取封面图片
+            # 从 CBZ 提取封面图片数据
             image_data = ArchiveService.extract_image(cbz_path, cover_filename)
-            
-            # 如果指定封面不存在，使用第一张图片
             if not image_data:
+                # 尝试使用 CBZ 中的第一张图片作为封面
                 image_list = ArchiveService.get_image_list(cbz_path)
                 if image_list:
                     logger.warning(f"封面 {cover_filename} 不存在，使用第一张图片 {image_list[0]}")
                     image_data = ArchiveService.extract_image(cbz_path, image_list[0])
-            
+
             if not image_data:
                 logger.error(f"无法从 {cbz_path.name} 提取封面图片")
                 return None
             
-            # 优化封面尺寸（适合卡片显示，提高清晰度）
-            # optimized_data = ArchiveService.resize_image(image_data, width=600, height=800)
-            optimized_data = image_data
-            # 保存封面
-            cover_path.write_bytes(optimized_data)
-            
-            logger.info(f"✅ 封面已提取: {cover_path} ({len(optimized_data)} bytes)")
+            # 打开图片并进行裁剪填充到 600x900，输出为 WebP
+            img = Image.open(io.BytesIO(image_data))
+            target_w, target_h = 600, 900
+            orig_w, orig_h = img.size
+            scale = max(target_w / orig_w, target_h / orig_h)
+            new_w = int(orig_w * scale)
+            new_h = int(orig_h * scale)
+            img = img.resize((new_w, new_h), Image.LANCZOS)
+            left = (new_w - target_w) // 2
+            top = (new_h - target_h) // 2
+            img = img.crop((left, top, left + target_w, top + target_h))
+
+            # 保存为 WebP
+            img.save(cover_path, format='WEBP', quality=85)
+            logger.info(f"✅ 封面已生成: {cover_path} ({cover_path.stat().st_size} bytes)")
             return cover_path
             
         except Exception as e:
@@ -73,13 +73,13 @@ class CoverService:
             return None
     
     def get_cover_url(self, cbz_path: Path) -> str:
-        """获取封面URL（基于CBZ文件名）"""
-        cover_name = f"{cbz_path.stem}.jpg"
+        """获取封面URL（基于CBZ文件名，WebP 格式）"""
+        cover_name = f"{cbz_path.stem}.webp"
         return f"/covers/{cover_name}"
     
     def get_cover_path_by_cbz(self, cbz_path: Path) -> Path:
         """获取封面文件路径（基于CBZ文件名）"""
-        cover_name = f"{cbz_path.stem}.jpg"
+        cover_name = f"{cbz_path.stem}.webp"
         return self.covers_dir / cover_name
     
     def get_cover_path_by_album_id(self, album_id: int, db) -> Optional[Path]:
@@ -103,9 +103,9 @@ class CoverService:
             valid_cbz_paths: 有效的CBZ文件路径集合
         """
         cleaned = 0
-        valid_cover_names = {f"{Path(p).stem}.jpg" for p in valid_cbz_paths}
+        valid_cover_names = {f"{Path(p).stem}.webp" for p in valid_cbz_paths}
         
-        for cover_file in self.covers_dir.glob("*.jpg"):
+        for cover_file in self.covers_dir.glob("*.webp"):
             if cover_file.name not in valid_cover_names:
                 try:
                     cover_file.unlink()
@@ -119,7 +119,7 @@ class CoverService:
     
     def get_stats(self) -> dict:
         """获取封面统计信息"""
-        cover_files = list(self.covers_dir.glob("*.jpg"))
+        cover_files = list(self.covers_dir.glob("*.webp"))
         total_size = sum(f.stat().st_size for f in cover_files)
         
         return {

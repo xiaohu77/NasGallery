@@ -3,6 +3,12 @@
 ## 项目概述
 NasGallery是一个双栈应用，包含FastAPI后端和React/TypeScript前端，用于管理和查看CBZ压缩包格式的图片档案。
 
+## 总体原则
+-使用pyhton命令时激活虚拟环境backend/venv
+-不要执行持续占用终端的命令 比如启动服务或交互式命令等
+-不要生成任何测试代码
+-不要生成任何文档
+
 ## 构建/测试命令
 
 ### 后端 (Python/FastAPI)

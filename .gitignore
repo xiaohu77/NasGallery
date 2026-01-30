@@ -92,7 +92,9 @@ backend/data/nasgallery.db
 # Backend 上传/缓存目录
 backend/data/images
 backend/data/tmp
+backend/data/tmp/thumbnail
 backend/venv
+
 
 # ============================================
 # Frontend (Node.js) 忽略规则
@@ -164,3 +166,5 @@ coverage/
 # 本地开发配置
 *.local.json
 local.config.js
+backend/.env.example
+frontend/.env.example

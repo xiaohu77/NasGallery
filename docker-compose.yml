@@ -20,10 +20,30 @@ services:
       - CACHE_DIR=/app/data/tmp/cache
       - COVERS_DIR=/app/data/tmp/covers
       - SECRET_KEY=${SECRET_KEY:-nasgallery-secret-key-change-in-production}
+    # 优化重启策略
     restart: unless-stopped
+    # 使用 --init 确保容器有 init 进程（处理僵尸进程和信号）
+    init: true
+    # 健康检查配置
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+      # 健康检查失败时标记为不健康，但不立即重启
+      start_interval: 5s
+    # 资源限制（防止资源耗尽导致僵尸进程）
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 256M
+    # 优雅关闭配置
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    # 清理配置
+    labels:
+      - "com.nasgallery.description=NasGallery image gallery manager"
+      - "com.nasgallery.version=0.1.0"

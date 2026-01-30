@@ -23,8 +23,10 @@ FROM python:3.11-alpine
 WORKDIR /app
 
 # 安装运行时依赖（最小化）
+# tini: 轻量级 init 进程，处理僵尸进程和信号转发
 RUN apk add --no-cache \
-    sqlite
+    sqlite \
+    tini
 
 # 复制虚拟环境
 COPY --from=backend-builder /opt/venv /opt/venv
@@ -52,5 +54,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
-# 启动命令
-CMD ["python", "run.py"]
+# 使用 tini 作为 init 进程，避免僵尸进程
+# --kill-on-exit: 当 tini 收到 SIGTERM 时，杀死所有子进程
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["uvicorn", "app.main:app --host 0.0.0.0 --port 8000"]
