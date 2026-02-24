@@ -1,229 +1,292 @@
 # NasGallery
 
 <p align="center">
-  <a href="https://github.com/wwgxx/NasGallery">
-    <img src="https://img.shields.io/github/stars/wwgxx/NasGallery?style=social" alt="GitHub stars">
-    <img src="https://img.shields.io/github/forks/wwgxx/NasGallery?style=social" alt="GitHub forks">
-    <img src="https://img.shields.io/github/license/wwgxx/NasGallery" alt="License">
+  <a href="https://github.com/xiaohu77/NasGallery">
+    <img src="https://img.shields.io/github/stars/xiaohu77/NasGallery?style=social" alt="GitHub stars">
+    <img src="https://img.shields.io/github/forks/xiaohu77/NasGallery?style=social" alt="GitHub forks">
+    <img src="https://img.shields.io/github/license/xiaohu77/NasGallery" alt="License">
   </a>
   <br>
-  <a href="https://github.com/wwgxx/NasGallery/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/wwgxx/NasGallery/ci.yml" alt="Build status">
+  <a href="https://github.com/xiaohu77/NasGallery/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/xiaohu77/NasGallery/ci.yml" alt="Build status">
   </a>
-  <img src="https://img.shields.io/github/languages/top/wwgxx/NasGallery" alt="Language">
-  <img src="https://img.shields.io/github/repo-size/wwgxx/NasGallery" alt="Repo size">
+  <img src="https://img.shields.io/github/languages/top/xiaohu77/NasGallery" alt="Language">
+  <img src="https://img.shields.io/github/repo-size/xiaohu77/NasGallery" alt="Repo size">
 </p>
 
-> A modern web application for managing and viewing CBZ image archives with a beautiful gallery interface.
+> 一个现代化的 Web 应用，用于管理和查看 CBZ 图片档案，提供精美的图集界面。
 
-English | [简体中文](./README_CN.md)
+简体中文 | [English](./README_EN.md)
 
-## ⭐ Star History
+## ✨ 功能特性
 
-[![Star History Chart](https://api.star-history.com/svg?repos=wwgxx/NasGallery&type=Date)](https://star-history.com/#wwgxx/NasGallery&Timeline)
+- 📚 **CBZ 档案管理** - 完整支持 CBZ（Comic Book ZIP）图片压缩包
+- 🖼️ **精美图集画廊** - 响应式瀑布流布局，支持灯箱查看
+- 🔍 **智能搜索** - 支持按标题、组织、模特、标签搜索图集
+- 🏷️ **分类体系** - 三级分类：组织 / 模特 / 标签
+- ⚡ **高性能** - 多级缓存系统，支持缩略图生成
+- 📱 **PWA 支持** - 可安装的 Web 应用，支持离线访问
+- 🌙 **深色模式** - 内置主题切换支持
+- 🔐 **安全认证** - 基于 JWT 的身份验证和角色管理
+- 🚀 **自动扫描** - 自动扫描文件系统，发现新内容
 
-## ✨ Features
+## 🛠️ 技术栈
 
-- 📚 **CBZ Archive Management** - Full support for CBZ (Comic Book ZIP) image archives
-- 🖼️ **Beautiful Gallery** - Responsive masonry grid layout with lightbox viewing
-- 🔍 **Smart Search** - Search albums by title, organization, model, or tags
-- 🏷️ **Organization System** - Three-level classification: Organization / Model / Tags
-- ⚡ **Fast Performance** - Multi-level caching system with thumbnail generation
-- 📱 **PWA Support** - Installable web app with offline capabilities
-- 🌙 **Dark Mode** - Built-in theme switching support
-- 🔐 **Secure Authentication** - JWT-based authentication with role management
-- 🚀 **Auto Scanning** - Automatic file system scanning for new content
+### 后端
+| 技术 | 描述 |
+|------|------|
+| [FastAPI](https://fastapi.tiangolo.com/) | 现代 Python Web 框架 |
+| [SQLAlchemy](https://www.sqlalchemy.org/) | SQL 工具和 ORM |
+| [Pydantic](https://docs.pydantic.dev/) | 数据验证 |
+| [Pillow](https://python-pillow.org/) | 图片处理 |
 
-## 🛠️ Tech Stack
+### 前端
+| 技术 | 描述 |
+|------|------|
+| [React](https://react.dev/) | UI 库 |
+| [TypeScript](https://www.typescriptlang.org/) | 类型安全 |
+| [Vite](https://vitejs.dev/) | 构建工具 |
+| [TailwindCSS](https://tailwindcss.com/) | 原子化 CSS 框架 |
 
-### Backend
-| Technology | Description |
-|------------|-------------|
-| [FastAPI](https://fastapi.tiangolo.com/) | Modern Python web framework |
-| [SQLAlchemy](https://www.sqlalchemy.org/) | SQL toolkit and ORM |
-| [Pydantic](https://docs.pydantic.dev/) | Data validation |
-| [Pillow](https://python-pillow.org/) | Image processing |
+## 🚀 快速开始
 
-### Frontend
-| Technology | Description |
-|------------|-------------|
-| [React](https://react.dev/) | UI library |
-| [TypeScript](https://www.typescriptlang.org/) | Type safety |
-| [Vite](https://vitejs.dev/) | Build tool |
-| [TailwindCSS](https://tailwindcss.com/) | Utility-first CSS |
-
-## 🚀 Quick Start
-
-### Prerequisites
+### 环境要求
 
 - Python 3.10+
 - Node.js 18+
-- npm or yarn
+- npm 或 yarn
 
-### Installation
+### 安装步骤
 
-1. **Clone the repository**
+1. **克隆仓库**
 
 ```bash
 git clone https://github.com/wwgxx/NasGallery.git
 cd NasGallery
 ```
 
-2. **Backend Setup**
+2. **后端配置**
 
 ```bash
 cd backend
 
-# Create virtual environment
+# 创建虚拟环境
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# or
+# 或
 venv\Scripts\activate     # Windows
 
-# Install dependencies
+# 安装依赖
 pip install -r requirements.txt
 
-# Initialize database
+# 初始化数据库
 python -c "from app.database import init_db; init_db()"
 
-# (Optional) Configure environment
+# （可选）配置环境变量
 cp ../.env.example .env
-# Edit .env with your settings
+# 编辑 .env 文件
 ```
 
-3. **Frontend Setup**
+3. **前端配置**
 
 ```bash
 cd frontend
 
-# Install dependencies
+# 安装依赖
 npm install
 
-# (Optional) Configure environment
+# （可选）配置环境变量
 cp .env.example .env
-# Edit .env with your API URL
+# 编辑 .env 文件
 ```
 
-### Running the Application
+### 运行应用
 
-**Backend:**
+**后端：**
 
 ```bash
 cd backend
 python run.py
-# or
+# 或
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-The API will be available at `http://localhost:8000`
+API 服务将在 `http://localhost:8000` 启动
 
-**Frontend:**
+**前端：**
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`
+应用将在 `http://localhost:5173` 启动
 
-### Initial Setup
+### 初始配置
 
-1. The default admin credentials are:
-   - Username: `admin`
-   - Password: `admin123`
+1. 默认管理员账户：
+   - 用户名：`admin`
+   - 密码：`admin123`
 
-2. Log in and navigate to the scan page to index your CBZ files
+2. 登录后进入扫描页面索引您的 CBZ 文件
 
-3. Place your CBZ files in the `data/images` directory
+3. 将 CBZ 文件放入 `data/images` 目录
 
-## 📁 Project Structure
+## 📋 图集元数据要求
+
+### 元数据文件
+
+每个 CBZ 压缩包内可包含 `metadata.json` 文件来定义图集元数据。
+
+### metadata.json 格式
+
+```json
+{
+  "institution": "机构名称",
+  "model": "模特名称",
+  "title": "图集标题",
+  "description": "图集描述"
+}
+```
+
+### 字段说明
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `institution` | 是 | 套图组织/机构名称 |
+| `model` | 是 | 模特名称 |
+| `title` | 是 | 图集标题 |
+| `description` | 否 | 图集描述 |
+
+### 文件命名规范
+
+如果 CBZ 文件内没有 `metadata.json`，系统会尝试从文件名解析元数据。
+
+**命名格式：**
+
+```
+机构名__其他信息__模特名称__页数P.jpg
+```
+
+**示例：**
+
+```
+优衣库__2024.01.15__张三__75P.cbz
+```
+
+解析结果：
+- 组织：`优衣库`
+- 模特：`张三`
+
+### 目录结构
+
+```
+data/images/
+├── 优衣库__张三__75P.cbz
+├── 优衣库__张三__80P.cbz
+└── 机构名__模特名__100P/
+    ├── metadata.json
+    ├── 001.jpg
+    ├── 002.jpg
+    └── ...
+```
+
+### 自动分类
+
+系统会根据元数据自动提取以下标签：
+
+- **组织 (org)**: 从 `institution` 字段提取
+- **模特 (model)**: 从 `model` 字段提取
+- **标签 (tags)**: 从 `title` 和 `description` 中匹配关键词
+
+支持的标签关键词：`美腿`, `巨乳`, `黑丝`, `足控`, `制服`, `高跟`, `cosplay`, `白丝`, `JK`, `教师`, `多人`, `女仆`, `护士`, `清纯`
+
+## 📁 项目结构
 
 ```
 NasGallery/
 ├── backend/
 │   ├── app/
-│   │   ├── api/endpoints/     # API routes
-│   │   ├── services/          # Business logic
-│   │   ├── models.py          # Database models
-│   │   ├── schemas.py         # Pydantic schemas
-│   │   ├── database.py        # Database config
-│   │   └── main.py            # App entry point
-│   ├── data/                  # Data directory
-│   │   ├── images/            # CBZ files
-│   │   └── tmp/               # Cache files
+│   │   ├── api/endpoints/     # API 路由
+│   │   ├── services/          # 业务逻辑
+│   │   ├── models.py          # 数据库模型
+│   │   ├── schemas.py         # Pydantic 模型
+│   │   ├── database.py        # 数据库配置
+│   │   └── main.py            # 应用入口
+│   ├── data/                  # 数据目录
+│   │   ├── images/            # CBZ 文件
+│   │   └── tmp/               # 缓存文件
 │   └── requirements.txt
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── components/        # React components
-│   │   ├── pages/             # Page components
-│   │   ├── hooks/             # Custom hooks
-│   │   ├── contexts/          # React contexts
-│   │   ├── services/          # API services
-│   │   └── types/             # TypeScript types
+│   │   ├── components/        # React 组件
+│   │   ├── pages/            # 页面组件
+│   │   ├── hooks/            # 自定义 Hooks
+│   │   ├── contexts/         # React Context
+│   │   ├── services/         # API 服务
+│   │   └── types/            # TypeScript 类型
 │   ├── public/
 │   └── package.json
 │
-├── .env                       # Environment config
+├── .env                       # 环境配置
 ├── docker-compose.yml         # Docker Compose
-├── Dockerfile                 # Docker image
+├── Dockerfile                 # Docker 镜像
 └── README.md
 ```
 
-## 📡 API Documentation
+## 📡 API 文档
 
-Once the server is running, visit:
+服务启动后，访问以下地址查看 API 文档：
 
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
-## 🔧 Configuration
+## 🔧 配置说明
 
-### Environment Variables
+### 环境变量
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PROJECT_NAME` | Project name | `GirlAtlas` |
-| `DATABASE_URL` | Database URL | `sqlite:///./data/nasgallery.db` |
-| `SECRET_KEY` | JWT secret key | Auto-generated |
-| `ADMIN_USERNAME` | Admin username | `admin` |
-| `ADMIN_PASSWORD` | Admin password | `admin123` |
-| `IMAGES_DIR` | CBZ files directory | `./data/images` |
-| `VITE_API_BASE` | API base URL | `http://localhost:8000` |
+| 变量 | 描述 | 默认值 |
+|------|------|--------|
+| `PROJECT_NAME` | 项目名称 | `GirlAtlas` |
+| `DATABASE_URL` | 数据库 URL | `sqlite:///./data/nasgallery.db` |
+| `SECRET_KEY` | JWT 密钥 | 自动生成 |
+| `ADMIN_USERNAME` | 管理员用户名 | `admin` |
+| `ADMIN_PASSWORD` | 管理员密码 | `admin123` |
+| `IMAGES_DIR` | CBZ 文件目录 | `./data/images` |
+| `VITE_API_BASE` | API 基础 URL | `http://localhost:8000` |
 
-## 🐳 Docker Deployment
+## 🐳 Docker 部署
 
 ```bash
-# Build and run with Docker Compose
+# 使用 Docker Compose 构建和运行
 docker-compose up -d
 
-# Or build individually
+# 或单独构建
 docker build -t nasgallery .
 docker run -d -p 8000:8000 -v ./data:/app/data nasgallery
 ```
 
-## 🤝 Contributing
+## 🤝 贡献指南
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+欢迎提交贡献！请随时提交 Pull Request。
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Fork 本仓库
+2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add some amazing feature'`)
+4. 推送分支 (`git push origin feature/amazing-feature`)
+5. 打开 Pull Request
 
-## 📄 License
+## 📄 开源许可证
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [FastAPI](https://fastapi.tiangolo.com/) for the amazing framework
-- [React](https://react.dev/) for the UI library
-- All contributors and users of this project
+本项目基于 MIT 许可证开源 - 请查看 [LICENSE](LICENSE) 文件了解详情。
 
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/wwgxx">wwgxx</a>
+  由 <a href="https://github.com/xiaohu77">xiaohu77</a> ❤️ 开发
 </p>
+
+## ⭐ 星星趋势
+
+[![Star History Chart](https://api.star-history.com/svg?repos=xiaohu77/NasGallery&type=Date)](https://star-history.com/#xiaohu77/NasGallery&Timeline)
