@@ -199,7 +199,7 @@ The system automatically extracts the following tags from metadata:
 - **Model (model)**: Extracted from `model` field
 - **Tags**: Matched keywords from `title` and `description`
 
-Supported tag keywords: `美腿`, `巨乳`, `黑丝`, `足控`, `制服`, `高跟`, `cosplay`, `白丝`, `JK`, `教师`, `多人`, `女仆`, `护士`, `清纯`
+Supported tag keywords: 风景,人像,动漫,CG,厚涂,油画,漫画,水彩,国画
 
 ## 📁 Project Structure
 
@@ -255,6 +255,7 @@ Once the server is running, visit:
 | `ADMIN_PASSWORD` | Admin password | `admin123` |
 | `IMAGES_DIR` | CBZ files directory | `./data/images` |
 | `VITE_API_BASE` | API base URL | `http://localhost:8000` |
+| `TAG_KEYWORDS` | Tag keywords (comma separated) | 美腿,巨乳,黑丝,足控,制服,高跟,cosplay,白丝,JK,教师,多人,女仆,护士,清净 |
 
 ## 🐳 Docker Deployment
 

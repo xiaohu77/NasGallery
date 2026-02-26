@@ -199,7 +199,7 @@ data/images/
 - **模特 (model)**: 从 `model` 字段提取
 - **标签 (tags)**: 从 `title` 和 `description` 中匹配关键词
 
-支持的标签关键词：`美腿`, `巨乳`, `黑丝`, `足控`, `制服`, `高跟`, `cosplay`, `白丝`, `JK`, `教师`, `多人`, `女仆`, `护士`, `清纯`
+支持的标签关键词：风景,人像,动漫,CG,厚涂,油画,漫画,水彩,国画
 
 ## 📁 项目结构
 
@@ -255,6 +255,7 @@ NasGallery/
 | `ADMIN_PASSWORD` | 管理员密码 | `admin123` |
 | `IMAGES_DIR` | CBZ 文件目录 | `./data/images` |
 | `VITE_API_BASE` | API 基础 URL | `http://localhost:8000` |
+| `TAG_KEYWORDS` | 标签关键字（逗号分隔） | 风景,人像,动漫,CG,厚涂,油画,漫画,水彩,国画 |
 
 ## 🐳 Docker 部署
 

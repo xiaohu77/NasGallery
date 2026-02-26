@@ -5,6 +5,8 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional, List
 
+from app.config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -69,10 +71,7 @@ class MetadataExtractor:
             description = metadata.get('description', '')
             combined_text = title + ' ' + description
             
-            keywords = [
-                '美腿', '巨乳', '黑丝', '足控', '制服', '高跟', 'cosplay',
-                '白丝', 'JK', '教师', '多人', '女仆', '护士', '清纯'
-            ]
+            keywords = settings.TAG_KEYWORDS.split(',') if settings.TAG_KEYWORDS else []
             
             for keyword in keywords:
                 if keyword in combined_text:
@@ -116,10 +115,7 @@ class MetadataExtractor:
                             result['model'].append(potential_model)
             
             # 3. 通用标签解析
-            keywords = [
-                '美腿', '巨乳', '黑丝', '足控', '制服', '高跟', 'cosplay',
-                '白丝', 'JK', '教师', '多人', '女仆', '护士', '清纯'
-            ]
+            keywords = settings.TAG_KEYWORDS.split(',') if settings.TAG_KEYWORDS else []
             
             for keyword in keywords:
                 if keyword in name:

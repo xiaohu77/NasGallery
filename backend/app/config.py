@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # 扫描配置
     SCAN_INTERVAL: int = 3600  # 秒
     
+    # 标签关键字配置
+    TAG_KEYWORDS: str = "风景,人像,动漫,CG,厚涂,油画,漫画,水彩,国画"
+    
     # JWT配置
     SECRET_KEY: str = "nasgallery-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
