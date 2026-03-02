@@ -88,7 +88,10 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
     if scan_path is None:
         from ..config import settings
         scan_path = settings.IMAGES_DIR
+    else:
+        from ..config import settings
     
+    from .cache import cache_service
     cover_service = CoverService(settings.COVERS_DIR)
     scan_logger = ScanLogger()
     
