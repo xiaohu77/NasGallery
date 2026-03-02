@@ -8,7 +8,7 @@ from typing import Optional
 
 from app.config import settings
 from app.database import init_db, SessionLocal
-from app.api.endpoints import albums, categories, scan, auth, static, thumbs
+from app.api.endpoints import albums, categories, scan, auth, static
 from app.models import User
 from passlib.context import CryptContext
 
@@ -42,7 +42,6 @@ app.include_router(categories.router)
 app.include_router(scan.router)
 app.include_router(auth.router)
 app.include_router(static.router)
-app.include_router(thumbs.router)
 
 # 挂载静态文件目录（前端构建产物）
 try:
@@ -63,7 +62,6 @@ async def startup_event():
     # 缓存目录
     settings.CACHE_DIR.mkdir(parents=True, exist_ok=True)
     settings.COVERS_DIR.mkdir(parents=True, exist_ok=True)
-    settings.THUMBNAIL_DIR.mkdir(parents=True, exist_ok=True)
     
     # 图片目录（包括子目录）
     settings.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
@@ -85,7 +83,6 @@ async def startup_event():
     print(f"数据库: {settings.DATABASE_URL}")
     print(f"图片目录: {settings.IMAGES_DIR}")
     print(f"封面目录: {settings.COVERS_DIR}")
-    print(f"缩略图目录: {settings.THUMBNAIL_DIR}")
     print(f"缓存目录: {settings.CACHE_DIR}")
     print(f"缓存服务已启动，定时清理任务运行中...")
 

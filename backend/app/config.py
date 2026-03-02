@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     IMAGES_DIR: Path = BASE_DIR / "data" / "images"
     CACHE_DIR: Path = BASE_DIR / "data" / "tmp" / "cache"
     COVERS_DIR: Path = BASE_DIR / "data" / "tmp" / "covers"
-    THUMBNAIL_DIR: Path = BASE_DIR / "data" / "tmp" / "thumbnail"
     
     # 图片子目录配置
     COMIC_DIR: Path = IMAGES_DIR / "comic"

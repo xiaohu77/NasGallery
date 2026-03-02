@@ -89,13 +89,7 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
         from ..config import settings
         scan_path = settings.IMAGES_DIR
     
-    # 初始化服务
-    from ..config import settings
-    from .cache import cache_service
     cover_service = CoverService(settings.COVERS_DIR)
-    # 额外的缩略图服务（新入库的图片生成缩略图）
-    from .thumbnail import ThumbnailService
-    thumbnail_service = ThumbnailService(settings.THUMBNAIL_DIR)
     scan_logger = ScanLogger()
     
     # 导入重构后的类
@@ -192,32 +186,24 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
                     if cover_path:
                         album.cover_path = str(cover_path)
                         logger.debug(f"封面已更新: {album.id}")
-                    
-                    # 同步为本次新入库的图集生成缩略图（按 CBZ 内图片生成）
-                    if cbz_metadata.get('file_list'):
-                        try:
-                            thumbnail_service.generate_thumbnails_for_cbz(
-                                cbz_file, album.id, cbz_metadata['file_list']
-                            )
-                            logger.debug(f"缩略图生成完成: 专辑 {album.id}")
-                        except Exception as e:
-                            logger.warning(f"缩略图生成失败: {e}")
+                
+                # 每个图集处理完成后立即提交，使数据实时可用
+                db.commit()
+                
+                # 增量更新统计信息（只更新当前图集涉及的分类）
+                stats_updater.update_stats_incremental(album, tag_info)
                 
             except Exception as e:
                 scan_logger.log_error(cbz_file.name, str(e))
                 continue
         
-        # 4. 提交所有更改
+        # 4. 清理已删除图集的封面
         try:
-            db.commit()
-            logger.info("✅ 数据库更改已提交")
-            
-            # 5. 清理已删除图集的封面
             logger.info("🧹 清理孤儿封面...")
             cache_cleaner.cleanup_orphaned_covers(existing_files)
             
-            # 6. 更新统计信息
-            logger.info("📊 更新统计信息...")
+            # 5. 最终统计信息校准（处理可能遗漏的统计）
+            logger.info("📊 校准统计信息...")
             stats_updater.update_statistics()
             db.commit()
             logger.info("✅ 统计信息已更新")

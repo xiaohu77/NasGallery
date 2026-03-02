@@ -1,4 +1,5 @@
 import logging
+from typing import Dict
 from sqlalchemy.orm import Session
 
 from ...models import Album, Tag, Organization, Model, AlbumTag
@@ -17,6 +18,50 @@ class StatsUpdater:
             db: 数据库会话
         """
         self.db = db
+    
+    def update_stats_incremental(self, album: Album, tag_info: Dict):
+        """
+        增量更新统计信息（只更新当前图集涉及的分类）
+        用于扫描过程中实时更新统计
+        """
+        try:
+            # 更新涉及的套图统计
+            for org_name in tag_info.get('org', []):
+                org = self.db.query(Organization).filter(Organization.name == org_name).first()
+                if org:
+                    count = self.db.query(AlbumTag)\
+                        .join(Tag)\
+                        .join(Album)\
+                        .filter(Tag.id == org.tag_id, Album.is_active == 1)\
+                        .count()
+                    org.album_count = count
+            
+            # 更新涉及的模特统计
+            for model_name in tag_info.get('model', []):
+                model = self.db.query(Model).filter(Model.name == model_name).first()
+                if model:
+                    count = self.db.query(AlbumTag)\
+                        .join(Tag)\
+                        .join(Album)\
+                        .filter(Tag.id == model.tag_id, Album.is_active == 1)\
+                        .count()
+                    model.album_count = count
+            
+            # 更新涉及的标签统计
+            for tag_name in tag_info.get('tags', []):
+                tag = self.db.query(Tag).filter(Tag.name == tag_name, Tag.type == 'tag').first()
+                if tag:
+                    tag.album_count = self.db.query(AlbumTag)\
+                        .join(Album)\
+                        .filter(AlbumTag.tag_id == tag.id, Album.is_active == 1)\
+                        .count()
+            
+            self.db.flush()
+            logger.debug(f"增量统计更新完成: {album.title}")
+            
+        except Exception as e:
+            logger.error(f"增量更新统计信息失败: {e}")
+            raise
     
     def update_statistics(self):
         """更新所有统计信息（只统计有效图集）"""
