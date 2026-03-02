@@ -57,4 +57,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # 使用 tini 作为 init 进程，避免僵尸进程
 # --kill-on-exit: 当 tini 收到 SIGTERM 时，杀死所有子进程
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["uvicorn", "app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
