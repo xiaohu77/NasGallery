@@ -133,7 +133,6 @@ lerna-debug.log*
 *.sw?
 
 # 锁文件（根据需要选择）
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
