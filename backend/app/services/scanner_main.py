@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Callable, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
@@ -73,14 +73,15 @@ class ScanLogger:
         return summary
 
 
-def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> Dict:
+def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True, progress_callback: Optional[Callable] = None) -> Dict:
     """
-    扫描目录并更新数据库（重构版）
+    扫描目录并更新数据库（支持CBZ和文件夹图集）
     
     Args:
         db: 数据库会话
         scan_path: 扫描路径
         use_lock: 是否使用文件锁防止并发扫描
+        progress_callback: 进度回调函数
     
     Returns:
         扫描结果和详细日志
@@ -92,6 +93,7 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
         from ..config import settings
     
     from .cache import cache_service
+    from .archive import FolderArchiveService
     cover_service = CoverService(settings.COVERS_DIR)
     scan_logger = ScanLogger()
     
@@ -121,20 +123,33 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
         
         # 1. 扫描CBZ文件
         try:
-            cbz_files, existing_files = file_scanner.scan_cbz_files()
+            cbz_files, cbz_paths = file_scanner.scan_cbz_files()
         except Exception as e:
-            scan_logger.log_error("文件扫描", f"无法访问目录: {e}")
+            scan_logger.log_error("CBZ扫描", f"无法访问目录: {e}")
             return scan_logger.get_summary()
         
-        # 2. 检测已删除的图集并清理缓存
-        cache_cleaner.detect_deleted_albums(existing_files)
+        # 2. 扫描文件夹图集
+        try:
+            folder_albums, folder_paths = file_scanner.scan_folder_albums()
+        except Exception as e:
+            scan_logger.log_error("文件夹扫描", f"无法访问目录: {e}")
+            return scan_logger.get_summary()
         
-        # 3. 处理每个CBZ文件
+        # 合并所有图集路径
+        all_album_paths = cbz_paths | folder_paths
+        total_items = len(cbz_files) + len(folder_albums)
+        processed_items = 0
+        
+        # 3. 检测已删除的图集并清理缓存
+        cache_cleaner.detect_deleted_albums(all_album_paths)
+        
+        # 4. 处理每个CBZ文件
         for cbz_file in cbz_files:
             try:
                 # 检查文件是否存在
                 if not cbz_file.exists():
                     scan_logger.log_error(cbz_file.name, "文件不存在")
+                    processed_items += 1
                     continue
                 
                 # 检查是否需要跳过
@@ -142,6 +157,7 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
                 if should_skip:
                     scan_logger.log_skipped_file(cbz_file.name, reason)
                     scan_logger.results['skipped_files'] += 1
+                    processed_items += 1
                     continue
                 elif reason == "文件大小变化，强制更新":
                     scan_logger.log_warning(cbz_file.name, reason)
@@ -178,7 +194,7 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
                 
                 # 创建或更新专辑
                 album = database_updater.create_or_update_album(
-                    cbz_file, cbz_metadata, tag_info, album_description
+                    cbz_file, cbz_metadata, tag_info, album_description, album_type='cbz'
                 )
                 
                 # 提取封面
@@ -196,16 +212,115 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
                 # 增量更新统计信息（只更新当前图集涉及的分类）
                 stats_updater.update_stats_incremental(album, tag_info)
                 
+                # 更新进度
+                processed_items += 1
+                if progress_callback:
+                    progress_callback({
+                        'status': 'running',
+                        'type': 'album_scan',
+                        'total': total_items,
+                        'processed': processed_items,
+                        'progress': int(processed_items / total_items * 100) if total_items > 0 else 0,
+                        'current_file': cbz_file.name,
+                        'new_albums': scan_logger.results['new_albums'],
+                        'updated_albums': scan_logger.results['updated_albums']
+                    })
+                
             except Exception as e:
                 scan_logger.log_error(cbz_file.name, str(e))
+                processed_items += 1
                 continue
         
-        # 4. 清理已删除图集的封面
+        # 5. 处理每个文件夹图集
+        for folder_path in folder_albums:
+            try:
+                # 检查文件夹是否存在
+                if not folder_path.exists():
+                    scan_logger.log_error(folder_path.name, "文件夹不存在")
+                    processed_items += 1
+                    continue
+                
+                # 检查是否需要跳过
+                should_skip, reason = file_scanner.should_skip_folder(folder_path, db, Album)
+                if should_skip:
+                    scan_logger.log_skipped_file(folder_path.name, reason)
+                    scan_logger.results['skipped_files'] += 1
+                    processed_items += 1
+                    continue
+                elif reason == "文件夹内容变化，强制更新":
+                    scan_logger.log_warning(folder_path.name, reason)
+                
+                scan_logger.results['scanned_files'] += 1
+                
+                # 提取元数据（优先从metadata.json，降级使用文件夹名）
+                metadata_json = metadata_extractor.extract_metadata_from_folder(folder_path)
+                
+                tag_info = {}
+                album_title = folder_path.name
+                album_description = None
+                
+                if metadata_json:
+                    # 使用metadata.json的数据
+                    tag_info = metadata_extractor.parse_metadata_to_tags(metadata_json)
+                    album_title = metadata_json.get('title', folder_path.name)
+                    album_description = metadata_json.get('description')
+                    scan_logger.log_debug(f"使用metadata: {folder_path.name}")
+                else:
+                    # 降级使用文件夹名解析
+                    tag_info = metadata_extractor.parse_folder_name(folder_path.name)
+                    scan_logger.log_warning(folder_path.name, "使用文件夹名解析（未找到metadata.json）")
+                
+                # 提取文件夹图集的图片元数据
+                folder_metadata = metadata_extractor.extract_folder_metadata(folder_path)
+                
+                if folder_metadata['image_count'] == 0:
+                    scan_logger.log_warning(folder_path.name, "未找到图片文件")
+                
+                # 创建或更新专辑
+                album = database_updater.create_or_update_album(
+                    folder_path, folder_metadata, tag_info, album_description, album_type='folder'
+                )
+                
+                # 提取封面
+                if folder_metadata['cover_image']:
+                    cover_path = cover_service.extract_cover_from_folder(
+                        folder_path, folder_metadata['cover_image'], album.id
+                    )
+                    if cover_path:
+                        album.cover_path = str(cover_path)
+                        logger.debug(f"封面已更新: {album.id}")
+                
+                # 每个图集处理完成后立即提交，使数据实时可用
+                db.commit()
+                
+                # 增量更新统计信息（只更新当前图集涉及的分类）
+                stats_updater.update_stats_incremental(album, tag_info)
+                
+                # 更新进度
+                processed_items += 1
+                if progress_callback:
+                    progress_callback({
+                        'status': 'running',
+                        'type': 'album_scan',
+                        'total': total_items,
+                        'processed': processed_items,
+                        'progress': int(processed_items / total_items * 100) if total_items > 0 else 0,
+                        'current_file': folder_path.name,
+                        'new_albums': scan_logger.results['new_albums'],
+                        'updated_albums': scan_logger.results['updated_albums']
+                    })
+                
+            except Exception as e:
+                scan_logger.log_error(folder_path.name, str(e))
+                processed_items += 1
+                continue
+        
+        # 6. 清理已删除图集的封面
         try:
             logger.info("🧹 清理孤儿封面...")
-            cache_cleaner.cleanup_orphaned_covers(existing_files)
+            cache_cleaner.cleanup_orphaned_covers(all_album_paths)
             
-            # 5. 最终统计信息校准（处理可能遗漏的统计）
+            # 7. 最终统计信息校准（处理可能遗漏的统计）
             logger.info("📊 校准统计信息...")
             stats_updater.update_statistics()
             db.commit()
@@ -217,10 +332,33 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True) -> D
             scan_logger.log_error("数据库提交", str(e))
             scan_logger.results['errors'] += 1
         
+        # 发送完成状态
+        if progress_callback:
+            summary = scan_logger.get_summary()
+            progress_callback({
+                'status': 'completed',
+                'type': 'album_scan',
+                'total': total_items,
+                'processed': processed_items,
+                'progress': 100,
+                'new_albums': scan_logger.results['new_albums'],
+                'updated_albums': scan_logger.results['updated_albums'],
+                'skipped_files': scan_logger.results['skipped_files'],
+                'errors': scan_logger.results['errors']
+            })
+        
     except Exception as e:
         logger.error(f"扫描过程异常: {e}")
         scan_logger.log_error("扫描过程", str(e))
         db.rollback()
+        
+        # 发送失败状态
+        if progress_callback:
+            progress_callback({
+                'status': 'failed',
+                'type': 'album_scan',
+                'error': str(e)
+            })
     
     finally:
         # 释放文件锁

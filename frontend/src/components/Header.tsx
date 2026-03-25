@@ -1,50 +1,131 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useUser } from '../contexts/UserContext'
 import { SunIcon, MoonIcon, UserIcon, SettingsIcon, LogoutIcon } from './icons'
 import { useState, useEffect, useCallback } from 'react'
 import SearchBox from './SearchBox'
+import { aiService } from '../services/aiService'
+import { PWAService } from '../services/pwaService'
 
-declare global {
-  interface Window {
-    toggleSidebar?: () => void
-  }
+interface SubCategory {
+  id: number
+  name: string
+  count: number
 }
+
+const mainTabs = [
+  { id: 'all', label: '所有图集', path: '/' },
+  { id: 'org', label: '刊物', path: '/org' },
+  { id: 'model', label: '人物', path: '/model' },
+]
+
+const allSubTabs = [
+  { id: 'recent', label: '近期新增', sort: 'recent' },
+  { id: 'popular', label: '浏览最多', sort: 'popular' },
+]
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme()
   const { user, isAuthenticated, logout } = useUser()
   const navigate = useNavigate()
   const location = useLocation()
-  const [isMobile, setIsMobile] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [aiEnabled, setAiEnabled] = useState(false)
+  const [activeMainTab, setActiveMainTab] = useState('all')
+  const [activeSubTab, setActiveSubTab] = useState<string | null>(null)
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([])
+  const [pwaService] = useState(() => new PWAService())
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024)
+    const checkAiStatus = async () => {
+      try {
+        const status = await aiService.getStatus()
+        setAiEnabled(status.has_model_files || status.stats.embedded_albums > 0)
+      } catch (e) {
+        setAiEnabled(false)
+      }
     }
-    
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    
-    return () => window.removeEventListener('resize', checkMobile)
+    checkAiStatus()
   }, [])
 
-  const toggleSidebar = () => {
-    if (window.toggleSidebar) {
-      window.toggleSidebar()
+  // 根据当前路径设置活跃 tab
+  useEffect(() => {
+    const path = location.pathname
+    const params = new URLSearchParams(location.search)
+    
+    if (path.startsWith('/org')) {
+      setActiveMainTab('org')
+      const orgId = path.split('/')[2]
+      setActiveSubTab(orgId || null)
+    } else if (path.startsWith('/model')) {
+      setActiveMainTab('model')
+      const modelId = path.split('/')[2]
+      setActiveSubTab(modelId || null)
+    } else {
+      setActiveMainTab('all')
+      const sort = params.get('sort')
+      setActiveSubTab(sort || null)
+    }
+  }, [location.pathname, location.search])
+
+  // 获取子分类数据
+  useEffect(() => {
+    const fetchSubCategories = async () => {
+      if (activeMainTab === 'all') {
+        setSubCategories([])
+        return
+      }
+
+      try {
+        const categories = await pwaService.getCategoryTree()
+        if (activeMainTab === 'org') {
+          setSubCategories(categories.org.map((o: any) => ({
+            id: o.id,
+            name: o.name,
+            count: o.album_count
+          })))
+        } else if (activeMainTab === 'model') {
+          setSubCategories(categories.model.map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            count: m.album_count
+          })))
+        }
+      } catch (e) {
+        console.error('获取子分类失败:', e)
+        setSubCategories([])
+      }
+    }
+    fetchSubCategories()
+  }, [activeMainTab, pwaService])
+
+  const handleLogoClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    navigate('/', { replace: true })
+  }, [navigate])
+
+  const handleMainTabClick = (tabId: string, path: string) => {
+    navigate(path)
+  }
+
+  const handleSubTabClick = (subId: string, subName?: string) => {
+    if (activeMainTab === 'all') {
+      // 所有图集下的排序选项
+      navigate(`/?sort=${subId}`)
+    } else if (activeMainTab === 'org') {
+      navigate(`/org/${subId}`)
+    } else if (activeMainTab === 'model') {
+      navigate(`/model/${subId}`)
     }
   }
 
-  const handleSearch = useCallback((query: string) => {
-    const params = new URLSearchParams(location.search)
+  const handleSearch = useCallback((query: string, mode: 'normal' | 'ai' = 'normal') => {
     if (query) {
-      params.set('search', query)
+      navigate(`/?search=${encodeURIComponent(query)}&mode=${mode}`)
     } else {
-      params.delete('search')
+      navigate('/')
     }
-    navigate(`${location.pathname}?${params.toString()}`, { replace: true })
-  }, [navigate, location])
+  }, [navigate])
 
   const handleUserClick = () => {
     if (isAuthenticated) {
@@ -65,91 +146,132 @@ const Header = () => {
     setShowUserMenu(false)
   }
 
-
-
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md">
-      <div className="flex items-center h-12 px-3 sm:px-4 lg:px-6">
-        {/* 左侧：Logo和侧边栏按钮 */}
-        <div className="flex items-center gap-2">
-          {isMobile && (
-            <button
-              onClick={toggleSidebar}
-              className="btn btn-ghost p-1.5 rounded-lg"
-              aria-label="打开侧边栏"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
-          )}
-          <Link to="/" className="text-sm font-bold text-slate-900 dark:text-white hover:opacity-80 transition-opacity">
-            NasGallery
-          </Link>
-        </div>
-        
-        {/* 中间：搜索框 */}
-        <div className={`flex-1 ${isMobile ? 'flex justify-center' : 'flex justify-end'} mx-3`}>
-          <div className={isMobile ? 'flex-1 max-w-[16rem]' : 'max-w-[12rem]'}>
-            <SearchBox onSearch={handleSearch} placeholder="搜索..." />
+    <header className="fixed top-0 left-0 right-0 z-50 glass">
+      {/* 主导航栏 */}
+      <div className="flex items-center h-12 px-4 sm:px-6">
+        <button
+          onClick={handleLogoClick}
+          className="text-sm font-semibold text-gray-900 dark:text-white hover:opacity-80 transition-opacity"
+        >
+          NasGallery
+        </button>
+
+        <div className="flex-1 flex justify-center mx-4">
+          <div className="w-full max-w-xs sm:max-w-sm">
+            <SearchBox onSearch={handleSearch} placeholder="搜索..." aiEnabled={aiEnabled} />
           </div>
         </div>
-        
-        {/* 右侧：主题和用户 */}
+
         <div className="flex items-center gap-1">
           <button
             onClick={toggleTheme}
-            className="btn btn-ghost p-1.5 rounded-lg"
+            className="p-2 rounded-full hover:bg-gray-500/10 transition-colors active:scale-90"
             aria-label="切换主题"
           >
             {theme === 'light' ? (
-              <MoonIcon className="w-4 h-4" />
+              <MoonIcon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
             ) : (
-              <SunIcon className="w-4 h-4" />
+              <SunIcon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
             )}
           </button>
-          
-          {/* 用户图标 */}
+
           <div className="relative">
             <button
               onClick={handleUserClick}
-              className="btn btn-ghost p-1.5 rounded-lg"
+              className="p-2 rounded-full hover:bg-gray-500/10 transition-colors active:scale-90"
               aria-label={isAuthenticated ? '用户菜单' : '登录'}
             >
-              <UserIcon className="w-4 h-4" />
+              <UserIcon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
             </button>
-            
-            {/* 用户下拉菜单 */}
+
             {showUserMenu && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
-                <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {user?.username}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {user?.email}
-                  </p>
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+                <div className="absolute right-0 top-full mt-2 w-56 glass-card rounded-2xl shadow-xl py-2 z-50 animate-bounce-in">
+                  <div className="px-4 py-3 border-b border-gray-200/30 dark:border-gray-700/30">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {user?.username}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {user?.email}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleSettings}
+                    className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-500/10 flex items-center gap-3 transition-colors"
+                  >
+                    <SettingsIcon className="w-4 h-4" />
+                    设置
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-red-500/10 flex items-center gap-3 transition-colors"
+                  >
+                    <LogoutIcon className="w-4 h-4" />
+                    退出登录
+                  </button>
                 </div>
-                <button
-                  onClick={handleSettings}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                >
-                  <SettingsIcon className="w-4 h-4" />
-                  设置
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                >
-                  <LogoutIcon className="w-4 h-4" />
-                  退出登录
-                </button>
-              </div>
+              </>
             )}
           </div>
         </div>
+      </div>
+
+      {/* 一级 Tab 栏 */}
+      <div className="flex items-center gap-6 px-4 sm:px-6 pb-1 overflow-x-auto hide-scrollbar">
+        {mainTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => handleMainTabClick(tab.id, tab.path)}
+            className={`
+              py-1.5 text-xs font-medium whitespace-nowrap transition-all
+              ${activeMainTab === tab.id
+                ? 'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }
+            `}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 二级 Tab 栏 */}
+      <div className="flex items-center gap-4 px-4 sm:px-6 pb-1 overflow-x-auto hide-scrollbar border-b border-gray-200/30 dark:border-gray-700/30">
+        {/* 所有图集的排序选项 */}
+        {activeMainTab === 'all' && allSubTabs.map((sub) => (
+          <button
+            key={sub.id}
+            onClick={() => handleSubTabClick(sub.sort)}
+            className={`
+              py-1 text-xs whitespace-nowrap transition-all
+              ${activeSubTab === sub.sort
+                ? 'text-gray-900 dark:text-white'
+                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
+              }
+            `}
+          >
+            {sub.label}
+          </button>
+        ))}
+        
+        {/* 刊物/人物的子分类 */}
+        {(activeMainTab === 'org' || activeMainTab === 'model') && subCategories.map((sub) => (
+          <button
+            key={sub.id}
+            onClick={() => handleSubTabClick(sub.id.toString())}
+            className={`
+              py-1 text-xs whitespace-nowrap transition-all
+              ${activeSubTab === sub.id.toString()
+                ? 'text-gray-900 dark:text-white'
+                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
+              }
+            `}
+          >
+            {sub.name} <span className="opacity-60">{sub.count}</span>
+          </button>
+        ))}
       </div>
     </header>
   )

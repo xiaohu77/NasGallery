@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Album } from '../types/album';
+import { Album, Tag } from '../types/album';
 import { PWAService } from '../services/pwaService';
 
 const API_BASE = import.meta.env.DEV
@@ -25,6 +25,16 @@ export const useAlbumData = (id: string | undefined, pwaService: PWAService) => 
 
         const albumDetail = await pwaService.getAlbumDetail(id);
 
+        // 转换标签数据
+        const tags: Tag[] = (albumDetail.tags || []).map((tag: any) => ({
+          id: tag.id,
+          name: tag.name,
+          type: tag.type,
+          description: tag.description,
+          album_count: tag.album_count,
+          created_at: tag.created_at
+        }));
+
         const transformedAlbum: Album = {
           id: albumDetail.id.toString(),
           title: albumDetail.title,
@@ -32,7 +42,8 @@ export const useAlbumData = (id: string | undefined, pwaService: PWAService) => 
           coverImage: albumDetail.cover_image
             ? `${API_BASE}/api/albums/${albumDetail.id}/images/${albumDetail.cover_image}`
             : '',
-          imageCount: albumDetail.image_count || 0
+          imageCount: albumDetail.image_count || 0,
+          tags: tags
         };
 
         setAlbum(transformedAlbum);
@@ -59,6 +70,16 @@ export const useAlbumData = (id: string | undefined, pwaService: PWAService) => 
 
       const albumDetail = await pwaService.refreshAlbumDetail(id);
 
+      // 转换标签数据
+      const tags: Tag[] = (albumDetail.tags || []).map((tag: any) => ({
+        id: tag.id,
+        name: tag.name,
+        type: tag.type,
+        description: tag.description,
+        album_count: tag.album_count,
+        created_at: tag.created_at
+      }));
+
       const transformedAlbum: Album = {
         id: albumDetail.id.toString(),
         title: albumDetail.title,
@@ -66,7 +87,8 @@ export const useAlbumData = (id: string | undefined, pwaService: PWAService) => 
         coverImage: albumDetail.cover_image
           ? `${API_BASE}/api/albums/${albumDetail.id}/images/${albumDetail.cover_image}`
           : '',
-        imageCount: albumDetail.image_count || 0
+        imageCount: albumDetail.image_count || 0,
+        tags: tags
       };
 
       setAlbum(transformedAlbum);

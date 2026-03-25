@@ -7,7 +7,7 @@ import logging
 import io
 from PIL import Image
 
-from .archive import ArchiveService
+from .archive import ArchiveService, FolderArchiveService
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,57 @@ class CoverService:
             logger.error(f"提取封面失败 {cbz_path.name}: {e}")
             return None
     
+    def extract_cover_from_folder(self, folder_path: Path, cover_filename: str, album_id: int) -> Optional[Path]:
+        """
+        从文件夹图集提取封面并转换为固定尺寸的 WebP（600x900），保存为 {folder_name}.webp
+        """
+        try:
+            # 使用文件夹名作为封面文件名，输出为 WEBP
+            cover_name = f"{folder_path.name}.webp"
+            cover_path = self.covers_dir / cover_name
+            
+            # 检查是否需要更新（基于文件夹修改时间）
+            if cover_path.exists():
+                folder_mtime = folder_path.stat().st_mtime
+                cover_mtime = cover_path.stat().st_mtime
+                if cover_mtime >= folder_mtime and cover_path.stat().st_size > 1000:
+                    logger.debug(f"封面已是最新: {cover_path}")
+                    return cover_path
+            
+            # 从文件夹提取封面图片数据
+            image_data = FolderArchiveService.extract_image(folder_path, cover_filename)
+            if not image_data:
+                # 尝试使用文件夹中的第一张图片作为封面
+                image_list = FolderArchiveService.get_image_list(folder_path)
+                if image_list:
+                    logger.warning(f"封面 {cover_filename} 不存在，使用第一张图片 {image_list[0]}")
+                    image_data = FolderArchiveService.extract_image(folder_path, image_list[0])
+
+            if not image_data:
+                logger.error(f"无法从 {folder_path.name} 提取封面图片")
+                return None
+            
+            # 打开图片并进行裁剪填充到 600x900，输出为 WebP
+            img = Image.open(io.BytesIO(image_data))
+            target_w, target_h = 600, 900
+            orig_w, orig_h = img.size
+            scale = max(target_w / orig_w, target_h / orig_h)
+            new_w = int(orig_w * scale)
+            new_h = int(orig_h * scale)
+            img = img.resize((new_w, new_h), Image.LANCZOS)
+            left = (new_w - target_w) // 2
+            top = (new_h - target_h) // 2
+            img = img.crop((left, top, left + target_w, top + target_h))
+
+            # 保存为 WebP
+            img.save(cover_path, format='WEBP', quality=85)
+            logger.info(f"✅ 封面已生成: {cover_path} ({cover_path.stat().st_size} bytes)")
+            return cover_path
+            
+        except Exception as e:
+            logger.error(f"提取封面失败 {folder_path.name}: {e}")
+            return None
+    
     def get_cover_url(self, cbz_path: Path) -> str:
         """获取封面URL（基于CBZ文件名，WebP 格式）"""
         cover_name = f"{cbz_path.stem}.webp"
@@ -95,15 +146,24 @@ class CoverService:
         """检查封面是否存在（基于CBZ文件名）"""
         return self.get_cover_path_by_cbz(cbz_path).exists()
     
-    def cleanup_orphaned_covers(self, valid_cbz_paths: set):
+    def cleanup_orphaned_covers(self, valid_album_paths: set):
         """
-        清理已删除图集的封面（基于CBZ文件名）
+        清理已删除图集的封面（支持CBZ和文件夹图集）
         
         Args:
-            valid_cbz_paths: 有效的CBZ文件路径集合
+            valid_album_paths: 有效的图集路径集合（CBZ文件路径或文件夹路径）
         """
         cleaned = 0
-        valid_cover_names = {f"{Path(p).stem}.webp" for p in valid_cbz_paths}
+        valid_cover_names = set()
+        
+        for p in valid_album_paths:
+            path = Path(p)
+            if path.is_file():
+                # CBZ文件：使用 stem（去掉扩展名）
+                valid_cover_names.add(f"{path.stem}.webp")
+            else:
+                # 文件夹：使用文件夹名
+                valid_cover_names.add(f"{path.name}.webp")
         
         for cover_file in self.covers_dir.glob("*.webp"):
             if cover_file.name not in valid_cover_names:

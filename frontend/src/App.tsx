@@ -20,9 +20,11 @@ const HomeWrapper = () => {
   const getKey = () => {
     const path = location.pathname;
     if (path === '/') return 'home-all';
-    if (path.startsWith('/org/')) return `home-org`;
-    if (path.startsWith('/model/')) return `home-model`;
-    if (path.startsWith('/tag/')) return `home-tag`;
+    if (path === '/org') return 'home-org';
+    if (path === '/model') return 'home-model';
+    if (path.startsWith('/org/')) return 'home-org-detail';
+    if (path.startsWith('/model/')) return 'home-model-detail';
+    if (path.startsWith('/tag/')) return 'home-tag';
     return 'home';
   };
 
@@ -79,7 +81,9 @@ function App(): JSX.Element {
               }
             >
               <Route index element={<HomeWrapper />} />
+              <Route path="/org" element={<HomeWrapper />} />
               <Route path="/org/:id" element={<HomeWrapper />} />
+              <Route path="/model" element={<HomeWrapper />} />
               <Route path="/model/:id" element={<HomeWrapper />} />
               <Route path="/tag/:id" element={<HomeWrapper />} />
               <Route path="/album/:id" element={<AlbumDetailWrapper />} />

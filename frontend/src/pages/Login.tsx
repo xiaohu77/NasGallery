@@ -33,14 +33,14 @@ const Login = (): JSX.Element => {
   }, [formData, login, navigate])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-sm animate-bounce-in">
+        <div className="backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 rounded-3xl p-8">
           <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-8">
             登录
           </h1>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label
                 htmlFor="username"
@@ -55,7 +55,7 @@ const Login = (): JSX.Element => {
                 value={formData.username}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-2xl bg-white/50 dark:bg-gray-800/50 border-0 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 transition-all placeholder:text-gray-400"
                 placeholder="请输入用户名"
               />
             </div>
@@ -74,13 +74,13 @@ const Login = (): JSX.Element => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-2xl bg-white/50 dark:bg-gray-800/50 border-0 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20 transition-all placeholder:text-gray-400"
                 placeholder="请输入密码"
               />
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
+              <div className="p-3 backdrop-blur-md bg-red-500/10 rounded-2xl text-red-600 dark:text-red-400 text-sm">
                 {error}
               </div>
             )}
@@ -88,13 +88,11 @@ const Login = (): JSX.Element => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="w-full py-3 px-4 bg-gray-900 dark:bg-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white dark:text-gray-900 font-medium rounded-2xl transition-all active:scale-[0.98]"
             >
               {isLoading ? '登录中...' : '登录'}
             </button>
           </form>
-
-
         </div>
       </div>
     </div>

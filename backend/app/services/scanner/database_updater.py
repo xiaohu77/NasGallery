@@ -127,31 +127,44 @@ class DatabaseUpdater:
             logger.error(f"更新图集标签失败 (Album ID: {album.id}): {e}")
             raise
     
-    def create_or_update_album(self, cbz_file: Path, cbz_metadata: Dict, tag_info: Dict, description: Optional[str] = None) -> Album:
+    def create_or_update_album(self, album_path: Path, metadata: Dict, tag_info: Dict, description: Optional[str] = None, album_type: str = 'cbz') -> Album:
         """
         创建或更新专辑
         
         Args:
-            cbz_file: CBZ文件路径
-            cbz_metadata: CBZ元数据（图片列表、封面等）
+            album_path: 图集路径（CBZ文件路径或文件夹路径）
+            metadata: 元数据（图片列表、封面等）
             tag_info: 标签信息
             description: 专辑描述
+            album_type: 图集类型（'cbz' 或 'folder'）
         
         Returns:
             创建或更新的专辑对象
         """
         try:
             # 获取文件信息
-            file_stat = cbz_file.stat()
-            file_size = file_stat.st_size
+            if album_type == 'cbz':
+                file_stat = album_path.stat()
+                file_size = file_stat.st_size
+                file_name = album_path.name
+                album_title = album_path.stem
+            else:
+                # 文件夹图集：计算文件夹中所有图片的总大小
+                file_size = 0
+                image_extensions = {'.jpg', '.jpeg', '.png'}
+                for item in album_path.iterdir():
+                    if item.is_file() and item.suffix.lower() in image_extensions:
+                        file_size += item.stat().st_size
+                file_name = album_path.name
+                album_title = album_path.name
             
-            # 从metadata或文件名获取标题和描述
-            album_title = cbz_file.stem
+            # 使用传入的描述或默认标题
+            album_title = album_title
             album_description = description
             
             # 检查是否已存在
             album = self.db.query(Album).filter(
-                Album.file_path == str(cbz_file),
+                Album.file_path == str(album_path),
                 Album.is_active == 1
             ).first()
             
@@ -161,12 +174,13 @@ class DatabaseUpdater:
                 # 创建新图集
                 album = Album(
                     title=album_title,
-                    file_path=str(cbz_file),
-                    file_name=cbz_file.name,
+                    file_path=str(album_path),
+                    file_name=file_name,
                     description=album_description,
-                    image_count=cbz_metadata['image_count'],
-                    cover_image=cbz_metadata['cover_image'],
+                    image_count=metadata['image_count'],
+                    cover_image=metadata['cover_image'],
                     file_size=file_size,
+                    album_type=album_type,
                     last_scan_time=datetime.utcnow(),
                     is_active=1
                 )
@@ -174,19 +188,20 @@ class DatabaseUpdater:
                 self.db.flush()
                 is_new = True
                 self.scan_logger.results['new_albums'] += 1
-                self.scan_logger.log_new_file(cbz_file.name)
+                self.scan_logger.log_new_file(album_path.name)
             else:
                 # 更新现有图集
                 album.title = album_title
                 album.description = album_description
-                album.image_count = cbz_metadata['image_count']
-                album.cover_image = cbz_metadata['cover_image']
+                album.image_count = metadata['image_count']
+                album.cover_image = metadata['cover_image']
                 album.file_size = file_size
+                album.album_type = album_type
                 album.updated_at = datetime.utcnow()
                 album.last_scan_time = datetime.utcnow()
                 album.is_active = 1  # 恢复已删除的图集
                 self.scan_logger.results['updated_albums'] += 1
-                self.scan_logger.log_updated_file(cbz_file.name)
+                self.scan_logger.log_updated_file(album_path.name)
             
             # 智能更新标签关联
             self.update_album_tags(album, tag_info)
@@ -194,5 +209,5 @@ class DatabaseUpdater:
             return album
             
         except Exception as e:
-            logger.error(f"创建或更新专辑失败 {cbz_file.name}: {e}")
+            logger.error(f"创建或更新专辑失败 {album_path.name}: {e}")
             raise

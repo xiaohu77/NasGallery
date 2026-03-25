@@ -7,7 +7,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models import Album, AlbumTag, Tag, User
 from app.schemas import AlbumSummary, AlbumResponse, PagedResponse
-from app.services.archive import ArchiveService
+from app.services.archive import ArchiveService, FolderArchiveService
 from app.services.cover import CoverService
 from app.services.cache import cache_service
 from app.config import settings
@@ -21,16 +21,27 @@ async def get_albums(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     tag_id: Optional[int] = None,
+    tag_type: Optional[str] = None,
     search: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     获取图集列表，支持分页、标签筛选和搜索
+    tag_type: 'org', 'model', 'tag' - 按标签类型筛选
     """
     query = db.query(Album).filter(Album.is_active == 1)
     
-    # 标签筛选
-    if tag_id:
+    # 按标签类型筛选
+    if tag_type and tag_type in ['org', 'model', 'tag']:
+        # 获取该类型的所有标签ID
+        tag_ids = [t.id for t in db.query(Tag.id).filter(Tag.type == tag_type, Tag.album_count > 0).all()]
+        if tag_ids:
+            query = query.join(AlbumTag).filter(AlbumTag.tag_id.in_(tag_ids)).distinct()
+        else:
+            # 没有该类型的标签，返回空
+            return PagedResponse(total=0, page=page, size=size, items=[])
+    # 按具体标签筛选
+    elif tag_id:
         query = query.join(AlbumTag).filter(AlbumTag.tag_id == tag_id)
     
     # 搜索（支持标题和描述的模糊搜索）
@@ -293,7 +304,7 @@ async def get_album_images(
             cache_service.set_image_list(album_id, cached_images)
     
     if not cached_images:
-        # 3. 缓存未命中，验证图集存在性并处理CBZ文件
+        # 3. 缓存未命中，验证图集存在性并处理图集文件
         album = db.query(Album).filter(
             Album.id == album_id,
             Album.is_active == 1
@@ -301,14 +312,18 @@ async def get_album_images(
         if not album:
             raise HTTPException(status_code=404, detail="图集不存在")
         
-        cbz_path = Path(album.file_path)
-        if not cbz_path.exists():
-            raise HTTPException(status_code=404, detail="CBZ文件不存在")
+        album_path = Path(album.file_path)
+        if not album_path.exists():
+            raise HTTPException(status_code=404, detail="图集文件不存在")
         
-        print(f"🔄 [图片列表] 从CBZ文件处理: {cbz_path.name}")
+        # 根据图集类型选择不同的处理方式
+        if album.album_type == 'folder':
+            print(f"🔄 [图片列表] 从文件夹处理: {album_path.name}")
+            image_list = FolderArchiveService.process_and_cache_folder(album_path, album_id)
+        else:
+            print(f"🔄 [图片列表] 从CBZ文件处理: {album_path.name}")
+            image_list = ArchiveService.process_and_cache_cbz(album_path, album_id)
         
-        # 直接解压并缓存全部图片信息
-        image_list = ArchiveService.process_and_cache_cbz(cbz_path, album_id)
         cached_images = image_list
     
     # 分页处理
@@ -368,10 +383,10 @@ async def get_image_content(
         except Exception as e:
             print(f"❌ [文件缓存] 读取失败: {e}")
     
-    # 2. 请求数据库，处理CBZ文件
-    print(f"🔄 [图片提取] 从CBZ文件处理: {filename}")
+    # 2. 请求数据库，处理图集文件
+    print(f"🔄 [图片提取] 从图集文件处理: {filename}")
     
-    # 调用统一的CBZ处理函数（会缓存所有图片）
+    # 调用统一的处理函数（会缓存所有图片）
     album = db.query(Album).filter(
         Album.id == album_id,
         Album.is_active == 1
@@ -379,11 +394,17 @@ async def get_image_content(
     if not album:
         raise HTTPException(status_code=404, detail="图集不存在")
     
-    cbz_path = Path(album.file_path)
-    if not cbz_path.exists():
-        raise HTTPException(status_code=404, detail="CBZ文件不存在")
+    album_path = Path(album.file_path)
+    if not album_path.exists():
+        raise HTTPException(status_code=404, detail="图集文件不存在")
     
-    image_list = ArchiveService.process_and_cache_cbz(cbz_path, album_id)
+    # 根据图集类型选择不同的处理方式
+    if album.album_type == 'folder':
+        print(f"🔄 [图片提取] 从文件夹处理: {album_path.name}")
+        image_list = FolderArchiveService.process_and_cache_folder(album_path, album_id)
+    else:
+        print(f"🔄 [图片提取] 从CBZ文件处理: {album_path.name}")
+        image_list = ArchiveService.process_and_cache_cbz(album_path, album_id)
     
     # 从缓存中获取指定图片
     image_data = cache_service.get_extracted_image(album_id, filename)

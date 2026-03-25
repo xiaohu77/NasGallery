@@ -132,6 +132,94 @@ class MetadataExtractor:
         return result
     
     @staticmethod
+    def parse_folder_name(folder_name: str) -> Dict[str, List[str]]:
+        """从文件夹名解析标签信息（备用方案）"""
+        try:
+            # 如果文件夹名包含 __，则按 CBZ 命名规则解析
+            if '__' in folder_name:
+                return MetadataExtractor.parse_filename(folder_name)
+            
+            # 否则简单处理，使用文件夹名作为标题
+            result = {'org': [], 'model': [], 'tags': ['默认']}
+            
+            # 尝试从文件夹名中提取套图信息
+            name = folder_name
+            org_name = re.sub(r'[A-Za-z]+', '', name)
+            if org_name:
+                result['org'].append(org_name)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"解析文件夹名失败 {folder_name}: {e}")
+            return {'org': [], 'model': [], 'tags': ['默认']}
+    
+    @staticmethod
+    def extract_folder_metadata(folder_path: Path) -> Dict:
+        """提取文件夹图集元数据（图片列表和封面）"""
+        try:
+            # 获取图片文件列表
+            image_extensions = {'.jpg', '.jpeg', '.png'}
+            image_files = sorted([
+                f.name for f in folder_path.iterdir()
+                if f.is_file() and f.suffix.lower() in image_extensions
+            ])
+            
+            # 确定封面
+            cover_image = None
+            if 'cover.jpg' in image_files:
+                cover_image = 'cover.jpg'
+            elif 'cover.jpeg' in image_files:
+                cover_image = 'cover.jpeg'
+            elif 'cover.png' in image_files:
+                cover_image = 'cover.png'
+            elif image_files:
+                cover_image = image_files[0]
+            
+            return {
+                'image_count': len(image_files),
+                'cover_image': cover_image,
+                'file_list': image_files
+            }
+        except Exception as e:
+            logger.error(f"提取文件夹元数据失败: {e}")
+            return {'image_count': 0, 'cover_image': None, 'file_list': []}
+    
+    @staticmethod
+    def extract_metadata_from_folder(folder_path: Path) -> Optional[Dict]:
+        """
+        从文件夹中提取metadata.json数据
+        
+        Returns:
+            metadata dict 或 None (如果读取失败)
+        """
+        try:
+            metadata_file = folder_path / 'metadata.json'
+            if not metadata_file.exists():
+                return None
+            
+            # 读取metadata.json
+            with open(metadata_file, 'r', encoding='utf-8') as f:
+                metadata_content = f.read()
+            
+            metadata = json.loads(metadata_content)
+            
+            # 验证必要字段
+            required_fields = ['institution', 'model', 'title', 'description']
+            for field in required_fields:
+                if field not in metadata:
+                    logger.warning(f"metadata.json缺少字段: {field}")
+            
+            return metadata
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"metadata.json格式错误: {folder_path.name} - {e}")
+            return None
+        except Exception as e:
+            logger.error(f"读取文件夹metadata失败: {folder_path.name} - {e}")
+            return None
+    
+    @staticmethod
     def extract_cbz_metadata(file_path: Path) -> Dict:
         """提取CBZ文件元数据（图片列表和封面）"""
         try:

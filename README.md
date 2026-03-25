@@ -23,12 +23,14 @@
 - 📚 **CBZ 档案管理** - 完整支持 CBZ（Comic Book ZIP）图片压缩包
 - 🖼️ **精美图集画廊** - 响应式瀑布流布局，支持灯箱查看
 - 🔍 **智能搜索** - 支持按标题、组织、模特、标签搜索图集
+- 🤖 **AI 以文搜图** - 基于 CLIP 模型的语义搜索，用自然语言描述查找图集
 - 🏷️ **分类体系** - 三级分类：组织 / 模特 / 标签
 - ⚡ **高性能** - 多级缓存系统，支持缩略图生成
 - 📱 **PWA 支持** - 可安装的 Web 应用，支持离线访问
 - 🌙 **深色模式** - 内置主题切换支持
 - 🔐 **安全认证** - 基于 JWT 的身份验证和角色管理
 - 🚀 **自动扫描** - 自动扫描文件系统，发现新内容
+- 🎮 **GPU 加速** - 支持 Intel GPU (OpenVINO) 和 NVIDIA GPU (CUDA) 加速 AI 推理
 
 ## 🛠️ 技术栈
 
@@ -39,6 +41,8 @@
 | [SQLAlchemy](https://www.sqlalchemy.org/) | SQL 工具和 ORM |
 | [Pydantic](https://docs.pydantic.dev/) | 数据验证 |
 | [Pillow](https://python-pillow.org/) | 图片处理 |
+| [ONNX Runtime](https://onnxruntime.ai/) | AI 模型推理引擎 |
+| [Chinese-CLIP](https://github.com/OFA-Sys/Chinese-CLIP) | 中文图文对齐模型 |
 
 ### 前端
 | 技术 | 描述 |
@@ -132,6 +136,43 @@ npm run dev
 
 3. 将 CBZ 文件放入 `data/images` 目录
 
+### AI 搜索配置（可选）
+
+AI 搜索功能需要额外配置：
+
+1. **下载 Chinese-CLIP 模型**
+
+```bash
+# 创建模型目录
+mkdir -p backend/data/ai_models/chinese-clip
+
+# 下载基础版模型（约 754MB）
+cd backend/data/ai_models/chinese-clip
+wget https://huggingface.co/Xenova/chinese-clip-vit-base-patch16/resolve/main/onnx/model.onnx -O model.onnx
+
+# 下载 tokenizer
+mkdir -p tokenizer
+wget https://huggingface.co/bert-base-chinese/resolve/main/vocab.txt -O tokenizer/vocab.txt
+```
+
+2. **安装 GPU 加速支持（可选）**
+
+```bash
+# Intel GPU (OpenVINO) - 推荐集成显卡
+pip install onnxruntime-openvino
+
+# NVIDIA GPU (CUDA) - 需要 NVIDIA 显卡
+pip install onnxruntime-gpu
+```
+
+3. **初始化 AI 向量**
+
+进入设置页面 → AI 搜索 → 点击"扫描"按钮
+
+4. **使用 AI 搜索**
+
+在搜索框点击 💡 图标切换到 AI 搜索模式，输入自然语言描述即可搜索
+
 ## 📋 图集元数据要求
 
 ### 元数据文件
@@ -208,13 +249,18 @@ NasGallery/
 ├── backend/
 │   ├── app/
 │   │   ├── api/endpoints/     # API 路由
-│   │   ├── services/          # 业务逻辑
+│   │   ├── services/
+│   │   │   ├── ai/            # AI 服务 (CLIP 模型)
+│   │   │   ├── scanner/       # 扫描服务
+│   │   │   └── ...
 │   │   ├── models.py          # 数据库模型
 │   │   ├── schemas.py         # Pydantic 模型
 │   │   ├── database.py        # 数据库配置
 │   │   └── main.py            # 应用入口
-│   ├── data/                  # 数据目录
+│   ├── data/
 │   │   ├── images/            # CBZ 文件
+│   │   ├── ai_models/         # AI 模型文件
+│   │   │   └── chinese-clip/  # Chinese-CLIP ONNX 模型
 │   │   └── tmp/               # 缓存文件
 │   └── requirements.txt
 │
@@ -241,6 +287,20 @@ NasGallery/
 
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
+
+### 主要 API 端点
+
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/api/albums/` | GET | 获取图集列表 |
+| `/api/albums/{id}` | GET | 获取图集详情 |
+| `/api/albums/{id}/images` | GET | 获取图集图片 |
+| `/api/categories/` | GET | 获取分类树 |
+| `/api/scan/` | POST | 启动图集扫描 |
+| `/api/ai/scan` | POST | 启动 AI 向量扫描 |
+| `/api/ai/search` | GET | AI 以文搜图 |
+| `/api/ai/status` | GET | AI 功能状态 |
+| `/api/ai/model/load` | POST | 加载 AI 模型 |
 
 ## 🔧 配置说明
 

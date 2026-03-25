@@ -90,6 +90,16 @@ export interface AlbumCard {
   imageCount: number
 }
 
+// 前端使用的图集详情数据类型
+export interface Album {
+  id: string
+  title: string
+  description: string
+  coverImage: string
+  imageCount: number
+  tags: Tag[]
+}
+
 // 后端图集详情响应类型
 export interface AlbumDetailResponse {
   id: number

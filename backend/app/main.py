@@ -8,7 +8,7 @@ from typing import Optional
 
 from app.config import settings
 from app.database import init_db, SessionLocal
-from app.api.endpoints import albums, categories, scan, auth, static
+from app.api.endpoints import albums, categories, scan, auth, static, ai
 from app.models import User
 from passlib.context import CryptContext
 
@@ -42,6 +42,7 @@ app.include_router(categories.router)
 app.include_router(scan.router)
 app.include_router(auth.router)
 app.include_router(static.router)
+app.include_router(ai.router)
 
 # 挂载静态文件目录（前端构建产物）
 try:
@@ -71,6 +72,10 @@ async def startup_event():
     settings.PHOTOBOOK_CHARACTER_DIR.mkdir(parents=True, exist_ok=True)
     settings.PHOTOBOOK_ORG_DIR.mkdir(parents=True, exist_ok=True)
     
+    # AI 模型目录
+    ai_models_dir = settings.BASE_DIR / "data" / "ai_models" / "chinese-clip"
+    ai_models_dir.mkdir(parents=True, exist_ok=True)
+    
     # 初始化数据库
     init_db()
     
@@ -85,6 +90,13 @@ async def startup_event():
     print(f"封面目录: {settings.COVERS_DIR}")
     print(f"缓存目录: {settings.CACHE_DIR}")
     print(f"缓存服务已启动，定时清理任务运行中...")
+    
+    # 自动加载 CLIP 模型（如果存在则常驻内存）
+    from app.services.ai import clip_service
+    if clip_service.load_model():
+        print(f"CLIP 模型已加载: {clip_service.get_model_info()}")
+    else:
+        print("CLIP 模型未找到，AI 搜索功能不可用")
 
 
 async def _init_or_update_admin_user():

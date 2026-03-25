@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, BigInteger, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, DateTime, BigInteger, ForeignKey, Table, LargeBinary, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
@@ -76,6 +76,7 @@ class Album(Base):
     cover_image = Column(String)
     cover_path = Column(String)  # 新增：本地封面路径
     file_size = Column(BigInteger)
+    album_type = Column(String, default='cbz')  # 图集类型：'cbz' 或 'folder'
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_scan_time = Column(DateTime)  # 新增：最后扫描时间
@@ -103,3 +104,39 @@ class User(Base):
     
     def __repr__(self):
         return f"<User(username='{self.username}', is_admin={self.is_admin})>"
+
+
+# 图集向量表（用于AI搜索）
+class AlbumEmbedding(Base):
+    __tablename__ = "album_embeddings"
+    
+    id = Column(Integer, primary_key=True)
+    album_id = Column(Integer, ForeignKey('albums.id'), unique=True, nullable=False)
+    embedding = Column(LargeBinary, nullable=False)  # 512维 float32 向量 = 2048 bytes
+    model_version = Column(String, default='clip-v1')  # 模型版本
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # 关联
+    album = relationship("Album", backref="embedding")
+    
+    def __repr__(self):
+        return f"<AlbumEmbedding(album_id={self.album_id}, model='{self.model_version}')>"
+
+
+# AI扫描任务状态表
+class AIScanTask(Base):
+    __tablename__ = "ai_scan_tasks"
+    
+    id = Column(Integer, primary_key=True)
+    task_id = Column(String, unique=True, nullable=False)  # UUID
+    status = Column(String, default='pending')  # pending, running, completed, failed
+    total_albums = Column(Integer, default=0)
+    processed_albums = Column(Integer, default=0)
+    failed_albums = Column(Integer, default=0)
+    error_message = Column(String)
+    started_at = Column(DateTime)
+    completed_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<AIScanTask(task_id='{self.task_id}', status='{self.status}')>"

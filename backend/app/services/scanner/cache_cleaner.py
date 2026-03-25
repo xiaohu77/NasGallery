@@ -31,7 +31,7 @@ class CacheCleaner:
         检测并标记已删除的图集，同时清理缓存
         
         Args:
-            existing_files: 现有的CBZ文件路径集合
+            existing_files: 现有的图集路径集合（包含CBZ文件路径和文件夹路径）
         """
         try:
             # 查找数据库中所有有效图集
@@ -66,12 +66,12 @@ class CacheCleaner:
             logger.error(f"检测删除图集失败: {e}")
             raise
     
-    def cleanup_orphaned_covers(self, valid_cbz_paths: Set[str]):
+    def cleanup_orphaned_covers(self, valid_album_paths: Set[str]):
         """
         清理已删除图集的封面
         
         Args:
-            valid_cbz_paths: 有效的CBZ文件路径集合
+            valid_album_paths: 有效的图集路径集合（包含CBZ文件路径和文件夹路径）
         """
         if self.cover_service:
-            self.cover_service.cleanup_orphaned_covers(valid_cbz_paths)
+            self.cover_service.cleanup_orphaned_covers(valid_album_paths)

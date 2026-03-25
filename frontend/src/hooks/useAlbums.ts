@@ -111,7 +111,10 @@ export const useAlbums = (
       setError(null);
       let response;
 
-      if (categoryType && categoryId) {
+      // 按标签类型筛选（如 org, model）
+      if (categoryType && !categoryId) {
+        response = await pwaService.getAlbums(pageNum, 20, categoryType);
+      } else if (categoryType && categoryId) {
         response = await pwaService.getAlbumsByCategory(categoryType, categoryId, pageNum, 20);
       } else if (searchQuery) {
         response = await pwaService.searchAlbums(searchQuery, pageNum, 20);
@@ -181,7 +184,10 @@ export const useAlbums = (
     try {
       let response;
 
-      if (categoryType && categoryId) {
+      // 按标签类型筛选（如 org, model）
+      if (categoryType && !categoryId) {
+        response = await pwaService.refreshAlbums(1, 20, categoryType);
+      } else if (categoryType && categoryId) {
         response = await pwaService.refreshAlbumsByCategory(categoryType, categoryId, 1, 20);
       } else if (searchQuery) {
         response = await pwaService.searchAlbums(searchQuery, 1, 20);
@@ -211,6 +217,9 @@ export const useAlbums = (
 
   // 当分类变化时，检查是否需要重新加载
   useEffect(() => {
+    // 重置恢复标记，允许为新分类恢复缓存
+    hasRestoredFromCache.current = false;
+    
     const savedState = sessionState.get<{
       albums: AlbumCard[];
       page: number;
@@ -218,8 +227,13 @@ export const useAlbums = (
       scrollPosition: number;
     }>(stateKey);
     
-    // 如果有缓存数据，直接恢复（无有效期限制，用户自己决定何时刷新）
+    // 如果有缓存数据，直接恢复
     if (savedState && savedState.albums.length > 0) {
+      hasRestoredFromCache.current = true;
+      setAlbums(savedState.albums);
+      setPage(savedState.page);
+      setHasMore(savedState.hasMore);
+      setScrollPosition(savedState.scrollPosition);
       setLoading(false);
       return;
     }

@@ -9,17 +9,21 @@ interface ImageGridProps {
   loading?: boolean
 }
 
+// 获取中等图 URL
+const getMediumUrl = (url: string) => {
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}width=1200`
+}
+
 const ImageGrid = ({ images, onImageClick, hasMore = false, onLoadMore, loading = false }: ImageGridProps) => {
   const [visibleImages, setVisibleImages] = useState<ImageItem[]>([])
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
-  // 优化图片显示，使用懒加载
   useEffect(() => {
     setVisibleImages(images)
   }, [images])
 
-  // 设置无限滚动观察器
   useEffect(() => {
     if (!hasMore || !onLoadMore || loading) return
 
@@ -55,7 +59,7 @@ const ImageGrid = ({ images, onImageClick, hasMore = false, onLoadMore, loading 
         >
           <div className="relative overflow-hidden">
             <img
-              src={image.url}
+              src={getMediumUrl(image.url)}
               alt={image.title}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
@@ -69,7 +73,6 @@ const ImageGrid = ({ images, onImageClick, hasMore = false, onLoadMore, loading 
         </div>
       ))}
 
-      {/* 加载更多指示器 */}
       {hasMore && (
         <div 
           ref={loadMoreRef}

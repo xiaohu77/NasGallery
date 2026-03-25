@@ -167,3 +167,129 @@ class ArchiveService:
         except Exception as e:
             print(f"Error getting image info: {e}")
             return {}
+
+
+class FolderArchiveService:
+    """文件夹图集处理服务"""
+    
+    @staticmethod
+    def process_and_cache_folder(folder_path: Path, album_id: int) -> List[str]:
+        """处理文件夹图集：读取并缓存全部图片信息
+        
+        Args:
+            folder_path: 文件夹路径
+            album_id: 图集ID
+        
+        Returns:
+            图片文件名列表
+        """
+        print(f"\n📁 [文件夹处理] 开始读取并缓存: {folder_path.name}, album_id={album_id}")
+        
+        try:
+            # 获取所有图片文件
+            image_extensions = {'.jpg', '.jpeg', '.png'}
+            image_files = sorted([
+                f.name for f in folder_path.iterdir()
+                if f.is_file() and f.suffix.lower() in image_extensions
+            ])
+            
+            if not image_files:
+                print(f"⚠️  [警告] 文件夹中没有图片: {folder_path.name}")
+                return []
+            
+            print(f"📊 [文件统计] 发现 {len(image_files)} 张图片")
+            
+            # 批量读取并缓存
+            image_dict = {}
+            for i, img_file in enumerate(image_files, 1):
+                try:
+                    img_path = folder_path / img_file
+                    with open(img_path, 'rb') as f:
+                        image_data = f.read()
+                    image_dict[img_file] = image_data
+                    if i <= 3:  # 只显示前3个
+                        print(f"   📄 读取 [{i}/{len(image_files)}]: {img_file} ({len(image_data)} bytes)")
+                except Exception as e:
+                    print(f"   ❌ 读取失败 [{i}/{len(image_files)}]: {img_file} - {e}")
+                    continue
+            
+            # 批量缓存图片
+            if image_dict:
+                print(f"💾 [批量缓存] 开始保存 {len(image_dict)} 张图片到缓存...")
+                cached_count = cache_service.batch_cache_images(album_id, image_dict)
+                
+                # 缓存图片列表
+                cache_service.set_image_list(album_id, image_files)
+                
+                # 标记缓存完成
+                cache_service.mark_album_cache_complete(album_id)
+                
+                print(f"✅ [文件夹处理完成] {folder_path.name} - {cached_count}/{len(image_files)} 张图片已缓存")
+                return image_files
+            
+            return []
+        except Exception as e:
+            print(f"❌ [文件夹处理失败] {folder_path.name}: {e}")
+            return []
+    
+    @staticmethod
+    def extract_image(folder_path: Path, filename: str) -> Optional[bytes]:
+        """从文件夹中提取单张图片（无缓存，专注提取）
+        
+        Args:
+            folder_path: 文件夹路径
+            filename: 图片文件名
+        
+        Returns:
+            图片数据，失败返回None
+        """
+        try:
+            img_path = folder_path / filename
+            if img_path.exists():
+                with open(img_path, 'rb') as f:
+                    return f.read()
+            else:
+                print(f"❌ [提取失败] 图片不存在: {filename}")
+                return None
+        except Exception as e:
+            print(f"❌ [提取失败] {folder_path.name}: {e}")
+            return None
+    
+    @staticmethod
+    def get_image_list(folder_path: Path) -> List[str]:
+        """获取文件夹中的图片列表（无缓存，专注提取）
+        
+        Args:
+            folder_path: 文件夹路径
+        
+        Returns:
+            图片文件名列表
+        """
+        try:
+            image_extensions = {'.jpg', '.jpeg', '.png'}
+            return sorted([
+                f.name for f in folder_path.iterdir()
+                if f.is_file() and f.suffix.lower() in image_extensions
+            ])
+        except Exception as e:
+            print(f"❌ [读取列表失败] {folder_path.name}: {e}")
+            return []
+    
+    @staticmethod
+    def get_image_info(folder_path: Path, filename: str) -> dict:
+        """获取图片信息"""
+        image_data = FolderArchiveService.extract_image(folder_path, filename)
+        if not image_data:
+            return {}
+        
+        try:
+            img = Image.open(io.BytesIO(image_data))
+            return {
+                'width': img.width,
+                'height': img.height,
+                'format': img.format,
+                'size': len(image_data)
+            }
+        except Exception as e:
+            print(f"Error getting image info: {e}")
+            return {}

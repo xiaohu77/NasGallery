@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useOffline } from '../contexts/OfflineContext'
-import { useTheme } from '../contexts/ThemeContext'
+import { useUser } from '../contexts/UserContext'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>
@@ -9,34 +9,43 @@ interface BeforeInstallPromptEvent extends Event {
 
 const PWAInstallPrompt = () => {
   const { isPWA } = useOffline()
-  const { theme } = useTheme()
+  const { isAuthenticated } = useUser()
   const [showPrompt, setShowPrompt] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
 
   useEffect(() => {
-    // 检查是否已经安装过
+    // 已安装或已PWA模式，不显示
+    if (isPWA) {
+      localStorage.setItem('pwa-installed', 'true')
+      return
+    }
+
+    // 已安装，不显示
     const hasInstalled = localStorage.getItem('pwa-installed')
     if (hasInstalled) return
 
-    // 监听beforeinstallprompt事件
+    // 已关闭提示，不显示
+    const hasDismissed = localStorage.getItem('pwa-dismissed')
+    if (hasDismissed) return
+
+    // 只有登录用户才显示提示
+    if (!isAuthenticated) return
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
-      setShowPrompt(true)
+      // 延迟显示，让用户先看到界面
+      setTimeout(() => {
+        setShowPrompt(true)
+      }, 2000)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
 
-    // 检查是否已经在PWA模式下
-    if (isPWA) {
-      localStorage.setItem('pwa-installed', 'true')
-      setShowPrompt(false)
-    }
-
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     }
-  }, [isPWA])
+  }, [isPWA, isAuthenticated])
 
   const handleInstall = async () => {
     if (!deferredPrompt) return
@@ -45,8 +54,8 @@ const PWAInstallPrompt = () => {
       const result = await deferredPrompt.prompt()
       if (result.outcome === 'accepted') {
         localStorage.setItem('pwa-installed', 'true')
-        setShowPrompt(false)
       }
+      setShowPrompt(false)
       setDeferredPrompt(null)
     } catch (error) {
       console.log('安装失败:', error)
@@ -55,7 +64,6 @@ const PWAInstallPrompt = () => {
   }
 
   const handleDismiss = () => {
-    // 记录用户选择，稍后不再提示
     localStorage.setItem('pwa-dismissed', 'true')
     setShowPrompt(false)
   }
@@ -63,32 +71,38 @@ const PWAInstallPrompt = () => {
   if (!showPrompt || isPWA) return null
 
   return (
-    <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border fixed bottom-4 left-1/2 transform -translate-x-1/2 rounded-xl shadow-lg p-4 max-w-[90%] w-[400px] flex flex-col gap-3 animate-slideUp z-50`}>
-      <div className="flex items-center gap-2">
-        <span className="text-xl">📱</span>
-        <div className="flex-1">
-          <div className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'} font-bold text-base mb-0.5`}>
-            安装 NasGallery
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[360px] animate-bounce-in-up">
+      <div className="glass-card rounded-3xl shadow-xl p-5">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
           </div>
-          <div className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} text-sm`}>
-            离线浏览图集，更快的访问速度
+          <div>
+            <div className="font-semibold text-gray-900 dark:text-white text-sm">
+              安装 NasGallery
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              离线浏览，更快访问
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex gap-2">
-        <button
-          onClick={handleInstall}
-          className={`${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} flex-1 px-4 py-2 rounded-lg font-semibold cursor-pointer text-sm transition-colors`}
-        >
-          立即安装
-        </button>
-        <button
-          onClick={handleDismiss}
-          className={`${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600 text-gray-300 border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'} flex-1 px-4 py-2 rounded-lg cursor-pointer text-sm transition-colors border`}
-        >
-          稍后
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleInstall}
+            className="flex-1 btn btn-primary rounded-2xl py-2.5"
+          >
+            安装
+          </button>
+          <button
+            onClick={handleDismiss}
+            className="flex-1 btn btn-ghost rounded-2xl py-2.5 bg-gray-500/10"
+          >
+            稍后
+          </button>
+        </div>
       </div>
     </div>
   )

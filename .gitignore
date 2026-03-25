@@ -91,6 +91,7 @@ backend/data/nasgallery.db
 
 # Backend 上传/缓存目录
 backend/data/images
+backend/data/ai_models
 backend/data/tmp
 backend/data/tmp/thumbnail
 backend/venv
