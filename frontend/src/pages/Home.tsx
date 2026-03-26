@@ -33,6 +33,40 @@ const Home = (): JSX.Element => {
   const [aiSearchLoading, setAiSearchLoading] = useState(false)
   const [aiSearchError, setAiSearchError] = useState<string | null>(null)
   
+  // 滑动切换分类
+  const touchStartX = useRef(0)
+  const mainTabs = [
+    { path: '/' },
+    { path: '/org' },
+    { path: '/model' },
+  ]
+  
+  const getCurrentTabIndex = useCallback(() => {
+    const path = location.pathname
+    if (path.startsWith('/org')) return 1
+    if (path.startsWith('/model')) return 2
+    return 0
+  }, [location.pathname])
+  
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }, [])
+  
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const touchEndX = e.changedTouches[0].clientX
+    const diff = touchStartX.current - touchEndX
+    const threshold = 80
+    
+    if (Math.abs(diff) < threshold) return
+    
+    const currentIndex = getCurrentTabIndex()
+    if (diff > 0 && currentIndex < mainTabs.length - 1) {
+      navigate(mainTabs[currentIndex + 1].path)
+    } else if (diff < 0 && currentIndex > 0) {
+      navigate(mainTabs[currentIndex - 1].path)
+    }
+  }, [getCurrentTabIndex, navigate])
+  
   // 从URL参数获取搜索查询和模式
   const searchQuery = useCallback(() => {
     const params = new URLSearchParams(location.search)
@@ -118,19 +152,18 @@ const Home = (): JSX.Element => {
     }
   }, [hasMore, isLoadingMore, loadMore])
 
-  // 滚动位置保存和恢复 - 只在组件挂载时恢复一次
+  // 滚动位置恢复 - 使用 ref 直接恢复，避免状态变化触发重渲染
   const hasRestoredScroll = useRef(false)
-  useEffect(() => {
-    if (scrollPosition > 0 && mainRef.current && !hasRestoredScroll.current) {
-      // 使用 setTimeout 确保 DOM 已经渲染完成
-      setTimeout(() => {
-        if (mainRef.current) {
-          mainRef.current.scrollTo({ top: scrollPosition, behavior: 'auto' });
-          hasRestoredScroll.current = true;
-        }
-      }, 50);
+  const restoreScrollRef = useCallback((node: HTMLDivElement | null) => {
+    if (node && scrollPosition > 0 && !hasRestoredScroll.current) {
+      hasRestoredScroll.current = true
+      // 使用 requestAnimationFrame 确保 DOM 布局完成
+      requestAnimationFrame(() => {
+        node.scrollTop = scrollPosition
+      })
     }
-  }, [scrollPosition, loading]);
+    mainRef.current = node
+  }, [scrollPosition])
 
   // AI 搜索处理
   useEffect(() => {
@@ -223,7 +256,7 @@ const Home = (): JSX.Element => {
   )
 
   return (
-    <div className="py-4 px-4 sm:px-6 lg:px-8 hide-scrollbar" ref={mainRef} onScroll={handleScroll}>
+    <div className="py-4 px-4 sm:px-6 lg:px-8 hide-scrollbar" ref={restoreScrollRef} onScroll={handleScroll} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {/* AI 搜索模式提示 */}
       {mode === 'ai' && query && (
         <div className="mb-4 text-center">

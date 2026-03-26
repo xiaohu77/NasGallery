@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { PWAService } from '../services/pwaService';
 import { AlbumSummary, AlbumCard } from '../types/album';
 import { sessionState, CacheKeys } from '../utils/cache';
@@ -7,111 +7,115 @@ const API_BASE = import.meta.env.DEV
   ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
   : window.location.origin;
 
+interface AlbumsState {
+  albums: AlbumCard[];
+  loading: boolean;
+  error: string | null;
+  page: number;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  scrollPosition: number;
+}
+
+type AlbumsAction =
+  | { type: 'RESTORE_CACHE'; payload: { albums: AlbumCard[]; page: number; hasMore: boolean; scrollPosition: number } }
+  | { type: 'START_LOADING' }
+  | { type: 'LOAD_SUCCESS'; payload: { albums: AlbumCard[]; page: number; hasMore: boolean } }
+  | { type: 'LOAD_MORE_SUCCESS'; payload: { albums: AlbumCard[]; page: number; hasMore: boolean } }
+  | { type: 'LOAD_ERROR'; payload: string }
+  | { type: 'START_LOAD_MORE' }
+  | { type: 'SET_SCROLL'; payload: number }
+  | { type: 'REFRESH' };
+
+const initialState: AlbumsState = {
+  albums: [],
+  loading: true,
+  error: null,
+  page: 1,
+  hasMore: true,
+  isLoadingMore: false,
+  scrollPosition: 0,
+};
+
+function albumsReducer(state: AlbumsState, action: AlbumsAction): AlbumsState {
+  switch (action.type) {
+    case 'RESTORE_CACHE':
+      return {
+        ...state,
+        albums: action.payload.albums,
+        page: action.payload.page,
+        hasMore: action.payload.hasMore,
+        scrollPosition: action.payload.scrollPosition,
+        loading: false,
+        error: null,
+      };
+    case 'START_LOADING':
+      return { ...state, loading: true, error: null };
+    case 'LOAD_SUCCESS':
+      return {
+        ...state,
+        albums: action.payload.albums,
+        page: action.payload.page,
+        hasMore: action.payload.hasMore,
+        loading: false,
+        error: null,
+      };
+    case 'LOAD_MORE_SUCCESS':
+      return {
+        ...state,
+        albums: [...state.albums, ...action.payload.albums],
+        page: action.payload.page,
+        hasMore: action.payload.hasMore,
+        isLoadingMore: false,
+      };
+    case 'LOAD_ERROR':
+      return { ...state, error: action.payload, loading: false, isLoadingMore: false };
+    case 'START_LOAD_MORE':
+      return { ...state, isLoadingMore: true };
+    case 'SET_SCROLL':
+      return { ...state, scrollPosition: action.payload };
+    case 'REFRESH':
+      return { ...initialState, loading: true };
+    default:
+      return state;
+  }
+}
+
 export const useAlbums = (
   categoryType: 'org' | 'model' | 'tag' | null,
   categoryId: number | null,
   pwaService: PWAService,
   searchQuery?: string
 ) => {
-  // 生成状态键（包含搜索查询）
   const stateKey = CacheKeys.state.albums(categoryType, categoryId, searchQuery);
-   
-  // 使用ref来跟踪是否已经从缓存恢复
-  const hasRestoredFromCache = useRef(false);
-   
-  // 从缓存恢复初始状态（只在组件挂载时执行一次）
-  const getInitialState = () => {
-    if (hasRestoredFromCache.current) {
-      return {
-        albums: [],
-        loading: true,
-        error: null,
-        page: 1,
-        hasMore: true,
-        isLoadingMore: false,
-        scrollPosition: 0
-      };
-    }
-    
-    const savedState = sessionState.get<{
-      albums: AlbumCard[];
-      page: number;
-      hasMore: boolean;
-      scrollPosition: number;
-    }>(stateKey);
-    
-    // 如果有缓存数据，直接恢复（无有效期限制）
-    if (savedState && savedState.albums.length > 0) {
-      hasRestoredFromCache.current = true;
-      return {
-        albums: savedState.albums,
-        loading: false,
-        error: null,
-        page: savedState.page,
-        hasMore: savedState.hasMore,
-        isLoadingMore: false,
-        scrollPosition: savedState.scrollPosition
-      };
-    }
-    
-    return {
-      albums: [],
-      loading: true,
-      error: null,
-      page: 1,
-      hasMore: true,
-      isLoadingMore: false,
-      scrollPosition: 0
-    };
-  };
+  const [state, dispatch] = useReducer(albumsReducer, initialState);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
-  const initialState = getInitialState();
-   
-  const [albums, setAlbums] = useState<AlbumCard[]>(initialState.albums);
-  const [loading, setLoading] = useState<boolean>(initialState.loading);
-  const [error, setError] = useState<string | null>(initialState.error);
-  const [page, setPage] = useState<number>(initialState.page);
-  const [hasMore, setHasMore] = useState<boolean>(initialState.hasMore);
-  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(initialState.isLoadingMore);
-  const [scrollPosition, setScrollPosition] = useState<number>(initialState.scrollPosition);
-   
   // 保存状态到缓存
-  const saveState = useCallback((currentAlbums: AlbumCard[], currentPage: number, currentHasMore: boolean, currentScrollPosition: number) => {
-    sessionState.set(stateKey, {
-      albums: currentAlbums,
-      page: currentPage,
-      hasMore: currentHasMore,
-      scrollPosition: currentScrollPosition
-    });
+  const saveState = useCallback((albums: AlbumCard[], page: number, hasMore: boolean, scrollPosition: number) => {
+    sessionState.set(stateKey, { albums, page, hasMore, scrollPosition });
   }, [stateKey]);
 
   const transformAlbum = useCallback((album: AlbumSummary): AlbumCard => {
     let coverImage = album.cover_url || '';
-
-    if (coverImage && coverImage.startsWith('/')) {
-      // 如果封面URL以 /covers/ 开头，添加 /api 前缀
-      if (coverImage.startsWith('/covers/')) {
-        coverImage = `${API_BASE}/api${coverImage}`;
-      } else {
-        coverImage = `${API_BASE}${coverImage}`;
-      }
+    if (coverImage.startsWith('/')) {
+      coverImage = coverImage.startsWith('/covers/')
+        ? `${API_BASE}/api${coverImage}`
+        : `${API_BASE}${coverImage}`;
     }
-
     return {
       id: album.id.toString(),
       title: album.title,
       description: album.description || '暂无描述',
-      coverImage: coverImage,
-      imageCount: album.image_count
+      coverImage,
+      imageCount: album.image_count,
     };
   }, []);
 
-  const fetchData = useCallback(async (pageNum: number = 1) => {
+  const fetchData = useCallback(async (pageNum: number) => {
     try {
-      setError(null);
       let response;
-
-      // 按标签类型筛选（如 org, model）
       if (categoryType && !categoryId) {
         response = await pwaService.getAlbums(pageNum, 20, categoryType);
       } else if (categoryType && categoryId) {
@@ -121,70 +125,42 @@ export const useAlbums = (
       } else {
         response = await pwaService.getAlbums(pageNum, 20);
       }
-
-      if (response.page * response.size >= response.total) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
-
-      const newAlbums = response.items.map(transformAlbum);
-
-      if (pageNum === 1) {
-        setAlbums(newAlbums);
-        // 保存第一页状态
-        saveState(newAlbums, 1, response.page * response.size < response.total, 0);
-      } else {
-        setAlbums(prev => {
-          const updatedAlbums = [...prev, ...newAlbums];
-          // 保存更多数据状态
-          saveState(updatedAlbums, pageNum, response.page * response.size < response.total, scrollPosition);
-          return updatedAlbums;
-        });
-      }
-
-      return newAlbums;
+      return response;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '加载失败';
-      setError(errorMessage);
-      console.error('加载图集失败:', err);
-      throw err;
+      throw new Error(errorMessage);
     }
-  }, [categoryType, categoryId, searchQuery, pwaService, transformAlbum, saveState, scrollPosition]);
+  }, [categoryType, categoryId, searchQuery, pwaService]);
 
-  // 保存滚动位置
+  // 保存滚动位置（只更新缓存，不触发重渲染）
   const saveScrollPosition = useCallback((position: number) => {
-    setScrollPosition(position);
-    // 同时保存到缓存
-    saveState(albums, page, hasMore, position);
-  }, [albums, page, hasMore, saveState]);
+    const { albums, page, hasMore } = stateRef.current;
+    sessionState.set(stateKey, { albums, page, hasMore, scrollPosition: position });
+  }, [stateKey]);
 
   const loadMore = useCallback(async () => {
+    const { hasMore, isLoadingMore, loading, page } = stateRef.current;
     if (!hasMore || isLoadingMore || loading) return;
 
-    setIsLoadingMore(true);
-    const nextPage = page + 1;
-
+    dispatch({ type: 'START_LOAD_MORE' });
     try {
-      await fetchData(nextPage);
-      setPage(nextPage);
+      const response = await fetchData(page + 1);
+      const newAlbums = response.items.map(transformAlbum);
+      const hasMoreData = response.page * response.size < response.total;
+      dispatch({ type: 'LOAD_MORE_SUCCESS', payload: { albums: newAlbums, page: page + 1, hasMore: hasMoreData } });
+      // 保存到缓存
+      const updatedAlbums = [...stateRef.current.albums, ...newAlbums];
+      saveState(updatedAlbums, page + 1, hasMoreData, stateRef.current.scrollPosition);
     } catch (err) {
       console.error('加载更多失败:', err);
-    } finally {
-      setIsLoadingMore(false);
+      dispatch({ type: 'LOAD_ERROR', payload: err instanceof Error ? err.message : '加载失败' });
     }
-  }, [hasMore, isLoadingMore, loading, page, fetchData]);
+  }, [fetchData, transformAlbum, saveState]);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
-    setPage(1);
-    setHasMore(true);
-    setAlbums([]);
-
+    dispatch({ type: 'REFRESH' });
     try {
       let response;
-
-      // 按标签类型筛选（如 org, model）
       if (categoryType && !categoryId) {
         response = await pwaService.refreshAlbums(1, 20, categoryType);
       } else if (categoryType && categoryId) {
@@ -194,79 +170,61 @@ export const useAlbums = (
       } else {
         response = await pwaService.refreshAlbums(1, 20);
       }
-
-      if (response.page * response.size >= response.total) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
-
       const newAlbums = response.items.map(transformAlbum);
-      setAlbums(newAlbums);
-      
-      // 保存刷新后的状态
-      saveState(newAlbums, 1, response.page * response.size < response.total, 0);
+      const hasMoreData = response.page * response.size < response.total;
+      dispatch({ type: 'LOAD_SUCCESS', payload: { albums: newAlbums, page: 1, hasMore: hasMoreData } });
+      saveState(newAlbums, 1, hasMoreData, 0);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '刷新失败';
-      setError(errorMessage);
+      dispatch({ type: 'LOAD_ERROR', payload: errorMessage });
       console.error('刷新图集失败:', err);
-    } finally {
-      setLoading(false);
     }
   }, [categoryType, categoryId, searchQuery, pwaService, transformAlbum, saveState]);
 
-  // 当分类变化时，检查是否需要重新加载
+  // 当分类变化时，从缓存恢复或重新加载
   useEffect(() => {
-    // 重置恢复标记，允许为新分类恢复缓存
-    hasRestoredFromCache.current = false;
-    
     const savedState = sessionState.get<{
       albums: AlbumCard[];
       page: number;
       hasMore: boolean;
       scrollPosition: number;
     }>(stateKey);
-    
-    // 如果有缓存数据，直接恢复
+
     if (savedState && savedState.albums.length > 0) {
-      hasRestoredFromCache.current = true;
-      setAlbums(savedState.albums);
-      setPage(savedState.page);
-      setHasMore(savedState.hasMore);
-      setScrollPosition(savedState.scrollPosition);
-      setLoading(false);
+      // 批量恢复缓存数据
+      dispatch({
+        type: 'RESTORE_CACHE',
+        payload: savedState,
+      });
       return;
     }
-    
-    // 如果没有缓存数据，进行初始加载
-    const loadInitialData = async () => {
-      setLoading(true);
-      setPage(1);
-      setHasMore(true);
-      setAlbums([]);
 
+    // 无缓存，重新加载
+    const loadInitialData = async () => {
+      dispatch({ type: 'START_LOADING' });
       try {
-        await fetchData(1);
+        const response = await fetchData(1);
+        const newAlbums = response.items.map(transformAlbum);
+        const hasMoreData = response.page * response.size < response.total;
+        dispatch({ type: 'LOAD_SUCCESS', payload: { albums: newAlbums, page: 1, hasMore: hasMoreData } });
+        saveState(newAlbums, 1, hasMoreData, 0);
       } catch (err) {
-        console.error('初始加载失败:', err);
-      } finally {
-        setLoading(false);
+        dispatch({ type: 'LOAD_ERROR', payload: err instanceof Error ? err.message : '加载失败' });
       }
     };
-
     loadInitialData();
-  }, [fetchData, stateKey]);
+  }, [stateKey, fetchData, transformAlbum, saveState]);
 
   return {
-    albums,
-    loading,
-    error,
-    page,
-    hasMore,
-    isLoadingMore,
+    albums: state.albums,
+    loading: state.loading,
+    error: state.error,
+    page: state.page,
+    hasMore: state.hasMore,
+    isLoadingMore: state.isLoadingMore,
     loadMore,
     refresh,
-    scrollPosition,
-    saveScrollPosition
+    scrollPosition: state.scrollPosition,
+    saveScrollPosition,
   };
 };

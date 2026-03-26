@@ -76,83 +76,95 @@ class MetadataExtractor:
             for keyword in keywords:
                 if keyword in combined_text:
                     result['tags'].append(keyword)
-            
-            # 默认标签
-            if not result['org'] and not result['model'] and not result['tags']:
-                result['tags'].append('默认')
                 
         except Exception as e:
             logger.error(f"解析metadata标签失败: {e}")
-            result['tags'].append('默认')
         
         return result
     
     @staticmethod
     def parse_filename(filename: str) -> Dict[str, List[str]]:
-        """从文件名解析标签信息（备用方案）"""
+        """从文件名解析标签信息（备用方案）- 只解析通用标签，不解析机构和模特"""
         try:
             name = filename.replace('.cbz', '')
-            parts = name.split('__')
             
             result = {'org': [], 'model': [], 'tags': []}
             
-            # 1. 套图解析
-            if len(parts) > 0:
-                org_name = re.sub(r'[A-Za-z]+', '', parts[0])
-                if org_name:
-                    result['org'].append(org_name)
-            
-            # 2. 模特解析（改进版）
-            # 模特字段通常在第3个位置（索引2），但需要排除页数格式
-            if len(parts) > 2:
-                potential_model = parts[2]
-                # 检查是否是页数格式（如 75P, 80P, 100P 等）
-                if not re.match(r'^\d+P$', potential_model):
-                    # 检查是否是纯数字（可能是编号）
-                    if not re.match(r'^\d+$', potential_model):
-                        # 检查是否包含日期格式
-                        if not re.match(r'^\d{4}\.\d{2}\.\d{2}$', potential_model):
-                            result['model'].append(potential_model)
-            
-            # 3. 通用标签解析
+            # 通用标签解析
             keywords = settings.TAG_KEYWORDS.split(',') if settings.TAG_KEYWORDS else []
             
             for keyword in keywords:
                 if keyword in name:
                     result['tags'].append(keyword)
-            
-            # 默认标签
-            if not result['org'] and not result['model'] and not result['tags']:
-                result['tags'].append('默认')
                 
         except Exception as e:
             logger.error(f"解析文件名失败 {filename}: {e}")
-            result = {'org': [], 'model': [], 'tags': ['默认']}
+            result = {'org': [], 'model': [], 'tags': []}
         
         return result
     
     @staticmethod
     def parse_folder_name(folder_name: str) -> Dict[str, List[str]]:
-        """从文件夹名解析标签信息（备用方案）"""
+        """从文件夹名解析标签信息（备用方案）- 只解析通用标签，不解析机构和模特"""
         try:
-            # 如果文件夹名包含 __，则按 CBZ 命名规则解析
-            if '__' in folder_name:
-                return MetadataExtractor.parse_filename(folder_name)
+            result = {'org': [], 'model': [], 'tags': []}
             
-            # 否则简单处理，使用文件夹名作为标题
-            result = {'org': [], 'model': [], 'tags': ['默认']}
+            # 通用标签解析
+            keywords = settings.TAG_KEYWORDS.split(',') if settings.TAG_KEYWORDS else []
             
-            # 尝试从文件夹名中提取套图信息
-            name = folder_name
-            org_name = re.sub(r'[A-Za-z]+', '', name)
-            if org_name:
-                result['org'].append(org_name)
+            for keyword in keywords:
+                if keyword in folder_name:
+                    result['tags'].append(keyword)
             
             return result
             
         except Exception as e:
             logger.error(f"解析文件夹名失败 {folder_name}: {e}")
-            return {'org': [], 'model': [], 'tags': ['默认']}
+            return {'org': [], 'model': [], 'tags': []}
+    
+    @staticmethod
+    def parse_path_structure(relative_path: str, scan_root: str) -> Dict[str, List[str]]:
+        """从目录路径结构解析机构和模特信息
+        
+        支持的路径格式：
+        - org/机构名/图集 → 添加机构标签
+        - model/模特名/图集 → 添加模特标签
+        - 其他路径 → 不添加机构/模特标签
+        
+        Args:
+            relative_path: 相对于扫描根目录的路径（不包含文件名）
+            scan_root: 扫描根目录
+        
+        Returns:
+            标签信息字典
+        """
+        try:
+            result = {'org': [], 'model': [], 'tags': []}
+            
+            # 获取相对路径（去掉扫描根目录）
+            path_parts = Path(relative_path).parts
+            
+            if len(path_parts) >= 2:
+                # 检查第一级目录是否是 org 或 model
+                first_level = path_parts[0].lower()
+                
+                if first_level == 'org' and len(path_parts) >= 2:
+                    # org/机构名/图集
+                    org_name = path_parts[1]
+                    if org_name and not org_name.startswith('.'):
+                        result['org'].append(org_name)
+                
+                elif first_level == 'model' and len(path_parts) >= 2:
+                    # model/模特名/图集
+                    model_name = path_parts[1]
+                    if model_name and not model_name.startswith('.'):
+                        result['model'].append(model_name)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"解析路径结构失败 {relative_path}: {e}")
+            return {'org': [], 'model': [], 'tags': []}
     
     @staticmethod
     def extract_folder_metadata(folder_path: Path) -> Dict:

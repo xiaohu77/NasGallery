@@ -1,12 +1,13 @@
 # ==================== 后端构建阶段 ====================
-FROM python:3.11-alpine AS backend-builder
+FROM python:3.11-slim AS backend-builder
 
 WORKDIR /app
 
-# 安装系统依赖
-RUN apk add --no-cache \
+# 安装构建依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
-    musl-dev
+    libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # 复制后端文件
 COPY backend/requirements.txt ./
@@ -16,17 +17,27 @@ COPY backend/.env.example ./
 
 # 创建虚拟环境并安装依赖
 RUN python -m venv /opt/venv && \
-    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt && \
+    /opt/venv/bin/pip install --no-cache-dir onnxruntime-openvino
+
 # ==================== 最终镜像阶段 ====================
-FROM python:3.11-alpine
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# 安装运行时依赖（最小化）
-# tini: 轻量级 init 进程，处理僵尸进程和信号转发
-RUN apk add --no-cache \
-    sqlite \
-    tini
+# 安装运行时依赖，包括 Intel GPU 支持
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sqlite3 \
+    tini \
+    # Intel GPU 驱动和 OpenCL 运行时
+    intel-opencl-icd \
+    intel-media-va-driver \
+    libigc-dev \
+    intel-gpu-tools \
+    # OpenVINO 运行时依赖
+    libtbb-dev \
+    libpugixml-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # 复制虚拟环境
 COPY --from=backend-builder /opt/venv /opt/venv
@@ -46,6 +57,8 @@ RUN mkdir -p /app/data/images /app/data/tmp/cache /app/data/tmp/covers
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+# OpenCL 环境变量
+ENV OCL_ICD_VENDORS=/etc/OpenCL/vendors
 
 # 暴露端口
 EXPOSE 8000
@@ -55,6 +68,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 # 使用 tini 作为 init 进程，避免僵尸进程
-# --kill-on-exit: 当 tini 收到 SIGTERM 时，杀死所有子进程
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

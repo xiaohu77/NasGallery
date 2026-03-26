@@ -171,19 +171,34 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True, prog
                 album_title = cbz_file.stem
                 album_description = None
                 
+                # 从路径提取机构/模特信息
+                relative_path = str(cbz_file.parent.relative_to(scan_path))
+                path_tags = metadata_extractor.parse_path_structure(relative_path, str(scan_path))
+                
                 if metadata_json:
-                    # 使用metadata.json的数据，但模特字段从文件名获取
+                    # 使用metadata.json的数据
                     tag_info = metadata_extractor.parse_metadata_to_tags(metadata_json)
-                    # 重新从文件名解析模特字段
-                    filename_tags = metadata_extractor.parse_filename(cbz_file.name)
-                    tag_info['model'] = filename_tags['model']
+                    
+                    # 合并路径提取的机构/模特信息
+                    if path_tags['org']:
+                        tag_info['org'] = path_tags['org']
+                    if path_tags['model']:
+                        tag_info['model'] = path_tags['model']
                     
                     album_title = metadata_json.get('title', cbz_file.stem)
                     album_description = metadata_json.get('description')
-                    scan_logger.log_debug(f"使用metadata（模特从文件名获取）: {cbz_file.name}")
+                    scan_logger.log_debug(f"使用metadata（机构/模特从路径获取）: {cbz_file.name}")
                 else:
-                    # 降级使用文件名解析
-                    tag_info = metadata_extractor.parse_filename(cbz_file.name)
+                    # 降级使用文件名解析（只解析通用标签）
+                    filename_tags = metadata_extractor.parse_filename(cbz_file.name)
+                    tag_info = filename_tags
+                    
+                    # 合并路径提取的机构/模特信息
+                    if path_tags['org']:
+                        tag_info['org'] = path_tags['org']
+                    if path_tags['model']:
+                        tag_info['model'] = path_tags['model']
+                    
                     scan_logger.log_warning(cbz_file.name, "使用文件名解析（未找到metadata.json）")
                 
                 # 提取CBZ文件的图片元数据
@@ -259,15 +274,34 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True, prog
                 album_title = folder_path.name
                 album_description = None
                 
+                # 从路径提取机构/模特信息
+                relative_path = str(folder_path.relative_to(scan_path))
+                path_tags = metadata_extractor.parse_path_structure(relative_path, str(scan_path))
+                
                 if metadata_json:
                     # 使用metadata.json的数据
                     tag_info = metadata_extractor.parse_metadata_to_tags(metadata_json)
+                    
+                    # 合并路径提取的机构/模特信息
+                    if path_tags['org']:
+                        tag_info['org'] = path_tags['org']
+                    if path_tags['model']:
+                        tag_info['model'] = path_tags['model']
+                    
                     album_title = metadata_json.get('title', folder_path.name)
                     album_description = metadata_json.get('description')
-                    scan_logger.log_debug(f"使用metadata: {folder_path.name}")
+                    scan_logger.log_debug(f"使用metadata（机构/模特从路径获取）: {folder_path.name}")
                 else:
-                    # 降级使用文件夹名解析
-                    tag_info = metadata_extractor.parse_folder_name(folder_path.name)
+                    # 降级使用文件夹名解析（只解析通用标签）
+                    folder_tags = metadata_extractor.parse_folder_name(folder_path.name)
+                    tag_info = folder_tags
+                    
+                    # 合并路径提取的机构/模特信息
+                    if path_tags['org']:
+                        tag_info['org'] = path_tags['org']
+                    if path_tags['model']:
+                        tag_info['model'] = path_tags['model']
+                    
                     scan_logger.log_warning(folder_path.name, "使用文件夹名解析（未找到metadata.json）")
                 
                 # 提取文件夹图集的图片元数据

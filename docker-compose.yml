@@ -24,6 +24,10 @@ services:
     restart: unless-stopped
     # 使用 --init 确保容器有 init 进程（处理僵尸进程和信号）
     init: true
+    # Intel GPU 设备映射
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+      - /dev/dri/card0:/dev/dri/card0
     # 健康检查配置
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]

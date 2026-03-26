@@ -48,8 +48,15 @@ const Header = () => {
     checkAiStatus()
   }, [])
 
+  // 是否显示 Tab 栏
+  const showTabs = !location.pathname.startsWith('/album/') && 
+                   !location.pathname.startsWith('/login') && 
+                   !location.pathname.startsWith('/settings')
+
   // 根据当前路径设置活跃 tab
   useEffect(() => {
+    if (!showTabs) return
+
     const path = location.pathname
     const params = new URLSearchParams(location.search)
     
@@ -66,7 +73,7 @@ const Header = () => {
       const sort = params.get('sort')
       setActiveSubTab(sort || null)
     }
-  }, [location.pathname, location.search])
+  }, [location.pathname, location.search, showTabs])
 
   // 获取子分类数据
   useEffect(() => {
@@ -219,60 +226,64 @@ const Header = () => {
       </div>
 
       {/* 一级 Tab 栏 */}
-      <div className="flex items-center gap-6 px-4 sm:px-6 pb-1 overflow-x-auto hide-scrollbar">
-        {mainTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => handleMainTabClick(tab.id, tab.path)}
-            className={`
-              py-1.5 text-xs font-medium whitespace-nowrap transition-all
-              ${activeMainTab === tab.id
-                ? 'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }
-            `}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {showTabs && (
+        <div className="flex items-center gap-6 px-4 sm:px-6 pb-1 overflow-x-auto hide-scrollbar">
+          {mainTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleMainTabClick(tab.id, tab.path)}
+              className={`
+                py-1.5 text-xs font-medium whitespace-nowrap transition-all
+                ${activeMainTab === tab.id
+                  ? 'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }
+              `}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 二级 Tab 栏 */}
-      <div className="flex items-center gap-4 px-4 sm:px-6 pb-1 overflow-x-auto hide-scrollbar border-b border-gray-200/30 dark:border-gray-700/30">
-        {/* 所有图集的排序选项 */}
-        {activeMainTab === 'all' && allSubTabs.map((sub) => (
-          <button
-            key={sub.id}
-            onClick={() => handleSubTabClick(sub.sort)}
-            className={`
-              py-1 text-xs whitespace-nowrap transition-all
-              ${activeSubTab === sub.sort
-                ? 'text-gray-900 dark:text-white'
-                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
-              }
-            `}
-          >
-            {sub.label}
-          </button>
-        ))}
-        
-        {/* 刊物/人物的子分类 */}
-        {(activeMainTab === 'org' || activeMainTab === 'model') && subCategories.map((sub) => (
-          <button
-            key={sub.id}
-            onClick={() => handleSubTabClick(sub.id.toString())}
-            className={`
-              py-1 text-xs whitespace-nowrap transition-all
-              ${activeSubTab === sub.id.toString()
-                ? 'text-gray-900 dark:text-white'
-                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
-              }
-            `}
-          >
-            {sub.name} <span className="opacity-60">{sub.count}</span>
-          </button>
-        ))}
-      </div>
+      {showTabs && (
+        <div className="flex items-center gap-4 px-4 sm:px-6 pb-1 overflow-x-auto hide-scrollbar border-b border-gray-200/30 dark:border-gray-700/30">
+          {/* 所有图集的排序选项 */}
+          {activeMainTab === 'all' && allSubTabs.map((sub) => (
+            <button
+              key={sub.id}
+              onClick={() => handleSubTabClick(sub.sort)}
+              className={`
+                py-1 text-xs whitespace-nowrap transition-all
+                ${activeSubTab === sub.sort
+                  ? 'text-gray-900 dark:text-white'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
+                }
+              `}
+            >
+              {sub.label}
+            </button>
+          ))}
+          
+          {/* 刊物/人物的子分类 */}
+          {(activeMainTab === 'org' || activeMainTab === 'model') && subCategories.map((sub) => (
+            <button
+              key={sub.id}
+              onClick={() => handleSubTabClick(sub.id.toString())}
+              className={`
+                py-1 text-xs whitespace-nowrap transition-all
+                ${activeSubTab === sub.id.toString()
+                  ? 'text-gray-900 dark:text-white'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
+                }
+              `}
+            >
+              {sub.name} <span className="opacity-60">{sub.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </header>
   )
 }

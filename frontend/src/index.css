@@ -236,6 +236,11 @@
 .stagger-item:nth-child(11) { animation-delay: 500ms; }
 .stagger-item:nth-child(12) { animation-delay: 550ms; }
 
+/* 页面切换过渡动画 */
+.page-transition {
+  animation: fade-in 0.2s ease-out;
+}
+
 /* 弹性滚动 */
 .bounce-scroll {
   overscroll-behavior: contain;
