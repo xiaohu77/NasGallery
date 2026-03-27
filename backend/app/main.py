@@ -66,11 +66,10 @@ async def startup_event():
     
     # 图片目录（包括子目录）
     settings.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-    settings.COMIC_DIR.mkdir(parents=True, exist_ok=True)
-    settings.COSPLAY_CHARACTER_DIR.mkdir(parents=True, exist_ok=True)
-    settings.COSPLAY_ORG_DIR.mkdir(parents=True, exist_ok=True)
-    settings.PHOTOBOOK_CHARACTER_DIR.mkdir(parents=True, exist_ok=True)
-    settings.PHOTOBOOK_ORG_DIR.mkdir(parents=True, exist_ok=True)
+    settings.ORG_DIR.mkdir(parents=True, exist_ok=True)
+    settings.MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    settings.COSPLAYER_DIR.mkdir(parents=True, exist_ok=True)
+    settings.CHARACTER_DIR.mkdir(parents=True, exist_ok=True)
     
     # AI 模型目录
     ai_models_dir = settings.BASE_DIR / "data" / "ai_models" / "chinese-clip"

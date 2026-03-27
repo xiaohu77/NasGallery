@@ -17,12 +17,11 @@ class Settings(BaseSettings):
     CACHE_DIR: Path = BASE_DIR / "data" / "tmp" / "cache"
     COVERS_DIR: Path = BASE_DIR / "data" / "tmp" / "covers"
     
-    # 图片子目录配置
-    COMIC_DIR: Path = IMAGES_DIR / "comic"
-    COSPLAY_CHARACTER_DIR: Path = IMAGES_DIR / "cosplay" / "character"
-    COSPLAY_ORG_DIR: Path = IMAGES_DIR / "cosplay" / "org"
-    PHOTOBOOK_CHARACTER_DIR: Path = IMAGES_DIR / "photobook" / "character"
-    PHOTOBOOK_ORG_DIR: Path = IMAGES_DIR / "photobook" / "org"
+    # 图片子目录配置（按分类）
+    ORG_DIR: Path = IMAGES_DIR / "org"
+    MODEL_DIR: Path = IMAGES_DIR / "model"
+    COSPLAYER_DIR: Path = IMAGES_DIR / "cosplayer"
+    CHARACTER_DIR: Path = IMAGES_DIR / "character"
     
     # 扫描配置
     SCAN_INTERVAL: int = 3600  # 秒
