@@ -135,16 +135,19 @@ async def _init_or_update_admin_user():
     finally:
         db.close()
 
+@app.get("/health")
+async def health_check():
+    """健康检查"""
+    return {"status": "healthy", "app": settings.APP_NAME}
+
 @app.on_event("shutdown")
 async def shutdown_event():
     """应用关闭时清理"""
     print("应用关闭")
 
-@app.get("/")
+@app.get("/", response_class=FileResponse)
 async def root():
     """根路径 - 提供前端页面"""
-    from fastapi.responses import JSONResponse
-    
     static_dir = Path(__file__).parent / "static"
     index_path = static_dir / "index.html"
     
@@ -152,15 +155,15 @@ async def root():
         return FileResponse(index_path)
     else:
         # 如果静态文件不存在，返回API信息
-        return JSONResponse({
+        return {
             "name": settings.APP_NAME,
             "version": settings.APP_VERSION,
             "status": "running",
             "docs": "/docs",
             "redoc": "/redoc"
-        })
+        }
 
-@app.get("/{path:path}")
+@app.get("/{path:path}", response_class=FileResponse)
 async def catch_all(path: str):
     """
     通配符路由 - 处理所有未匹配的路径
@@ -168,11 +171,9 @@ async def catch_all(path: str):
     
     注意: 不处理 /api/ 路径，这些路径由API路由处理
     """
-    from fastapi import HTTPException
-    from fastapi.responses import JSONResponse
-    
     # 不处理API路径
     if path.startswith("api/"):
+        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Not found")
     
     static_dir = Path(__file__).parent / "static"
@@ -190,17 +191,10 @@ async def catch_all(path: str):
         return FileResponse(index_path)
     
     # 如果静态文件不存在，返回API信息
-    return JSONResponse({
+    return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "status": "running",
         "docs": "/docs",
         "redoc": "/redoc"
-    })
-
-
-
-@app.get("/health")
-async def health_check():
-    """健康检查"""
-    return {"status": "healthy", "app": settings.APP_NAME}
+    }
