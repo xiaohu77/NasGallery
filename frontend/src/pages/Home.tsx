@@ -69,6 +69,10 @@ const Home = (): JSX.Element => {
     } else if (diff < 0 && currentIndex > 0) {
       navigate(mainTabs[currentIndex - 1].path)
     }
+    
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0
+    }
   }, [getCurrentTabIndex, navigate])
   
   // 从URL参数获取搜索查询和模式

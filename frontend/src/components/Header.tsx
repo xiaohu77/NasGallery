@@ -134,6 +134,7 @@ const Header = () => {
   }, [navigate])
 
   const handleMainTabClick = (tabId: string, path: string) => {
+    setActiveSubTab(null)
     navigate(path)
   }
 

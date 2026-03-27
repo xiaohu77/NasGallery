@@ -183,24 +183,22 @@ export const useAlbums = (
 
   // 当分类变化时，从缓存恢复或重新加载
   useEffect(() => {
-    const savedState = sessionState.get<{
-      albums: AlbumCard[];
-      page: number;
-      hasMore: boolean;
-      scrollPosition: number;
-    }>(stateKey);
+    const loadData = async () => {
+      const savedState = sessionState.get<{
+        albums: AlbumCard[];
+        page: number;
+        hasMore: boolean;
+        scrollPosition: number;
+      }>(stateKey);
 
-    if (savedState && savedState.albums.length > 0) {
-      // 批量恢复缓存数据
-      dispatch({
-        type: 'RESTORE_CACHE',
-        payload: savedState,
-      });
-      return;
-    }
+      if (savedState && savedState.albums.length > 0) {
+        dispatch({
+          type: 'RESTORE_CACHE',
+          payload: savedState,
+        });
+        return;
+      }
 
-    // 无缓存，重新加载
-    const loadInitialData = async () => {
       dispatch({ type: 'START_LOADING' });
       try {
         const response = await fetchData(1);
@@ -212,8 +210,8 @@ export const useAlbums = (
         dispatch({ type: 'LOAD_ERROR', payload: err instanceof Error ? err.message : '加载失败' });
       }
     };
-    loadInitialData();
-  }, [stateKey, fetchData, transformAlbum, saveState]);
+    loadData();
+  }, [stateKey, categoryType, categoryId, fetchData, transformAlbum, saveState]);
 
   return {
     albums: state.albums,
