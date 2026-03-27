@@ -163,6 +163,94 @@ const Settings = (): JSX.Element => {
     loadStats()
   }, [pwaService])
 
+  // 检查是否有正在运行的扫描任务
+  useEffect(() => {
+    const checkRunningScan = async () => {
+      try {
+        const status = await pwaService.getScanStatus()
+        if (status.is_running) {
+          // 有正在运行的扫描任务，连接 SSE 获取进度
+          setScanProgress({ status: 'running', total: 0, processed: 0, progress: 0, new_albums: 0, updated_albums: 0 })
+          setLoading('scan')
+          
+          const API_BASE = import.meta.env.DEV 
+            ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
+            : window.location.origin
+          
+          const eventSource = new EventSource(`${API_BASE}/api/scan/progress`)
+          
+          eventSource.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data)
+              
+              if (data.type === 'heartbeat') return
+              
+              if (data.status === 'running') {
+                setScanProgress({
+                  status: 'running',
+                  total: data.total || 0,
+                  processed: data.processed || 0,
+                  progress: data.progress || 0,
+                  current_file: data.current_file,
+                  new_albums: data.new_albums || 0,
+                  updated_albums: data.updated_albums || 0
+                })
+              } else if (data.status === 'completed') {
+                setScanProgress({
+                  status: 'completed',
+                  total: data.total || 0,
+                  processed: data.processed || 0,
+                  progress: 100,
+                  new_albums: data.new_albums || 0,
+                  updated_albums: data.updated_albums || 0
+                })
+                eventSource.close()
+                setLoading(null)
+                
+                // 重新加载统计数据
+                Promise.all([
+                  pwaService.getScanStats(),
+                  pwaService.getOrphanStats()
+                ]).then(([scan, orphan]) => {
+                  setScanStats(scan)
+                  setOrphanStats(orphan)
+                })
+              } else if (data.status === 'failed') {
+                setScanProgress({
+                  status: 'failed',
+                  total: 0,
+                  processed: 0,
+                  progress: 0,
+                  new_albums: 0,
+                  updated_albums: 0
+                })
+                eventSource.close()
+                setLoading(null)
+              } else if (data.status === 'no_task') {
+                // 没有正在进行的任务
+                setScanProgress(null)
+                setLoading(null)
+                eventSource.close()
+              }
+            } catch (e) {
+              console.error('解析进度数据失败:', e)
+            }
+          }
+          
+          eventSource.onerror = () => {
+            console.error('SSE 连接错误')
+            eventSource.close()
+            setLoading(null)
+            setScanProgress(null)
+          }
+        }
+      } catch (e) {
+        console.error('检查扫描状态失败:', e)
+      }
+    }
+    checkRunningScan()
+  }, [pwaService])
+
   // 加载 AI 状态
   useEffect(() => {
     const loadAiStatus = async () => {
@@ -417,7 +505,7 @@ const Settings = (): JSX.Element => {
         </div>
       )}
 
-      <div className="max-w-xl mx-auto px-4 py-8">
+      <div className="max-w-xl mx-auto px-4 pt-6 pb-8">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">设置</h1>
         <p className="text-sm text-gray-500 mb-8">扫描、统计与数据维护</p>
 
@@ -503,6 +591,8 @@ const Settings = (): JSX.Element => {
               清理
             </ActionButton>
           </SettingRow>
+
+
         </div>
 
         {/* AI 搜索设置 */}

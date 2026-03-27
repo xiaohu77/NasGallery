@@ -24,7 +24,7 @@ export class PWAService {
   }
 
   async getAlbumsByCategory(
-    categoryType: 'org' | 'model' | 'tag',
+    categoryType: 'org' | 'model' | 'cosplayer' | 'character' | 'tag',
     categoryId: number,
     page: number = 1,
     size: number = 20
@@ -36,6 +36,12 @@ export class PWAService {
         break;
       case 'model':
         endpoint = `/api/albums/model/${categoryId}`;
+        break;
+      case 'cosplayer':
+        endpoint = `/api/albums/cosplayer/${categoryId}`;
+        break;
+      case 'character':
+        endpoint = `/api/albums/character/${categoryId}`;
         break;
       case 'tag':
         endpoint = `/api/albums/tag/${categoryId}`;
@@ -48,7 +54,7 @@ export class PWAService {
   }
 
   async refreshAlbumsByCategory(
-    categoryType: 'org' | 'model' | 'tag',
+    categoryType: 'org' | 'model' | 'cosplayer' | 'character' | 'tag',
     categoryId: number,
     page: number = 1,
     size: number = 20
@@ -60,6 +66,12 @@ export class PWAService {
         break;
       case 'model':
         endpoint = `/api/albums/model/${categoryId}`;
+        break;
+      case 'cosplayer':
+        endpoint = `/api/albums/cosplayer/${categoryId}`;
+        break;
+      case 'character':
+        endpoint = `/api/albums/character/${categoryId}`;
         break;
       case 'tag':
         endpoint = `/api/albums/tag/${categoryId}`;
@@ -102,6 +114,10 @@ export class PWAService {
 
   async scanAlbumsSync(): Promise<ScanResponse> {
     return apiClient.post('/api/scan/sync');
+  }
+
+  async getScanStatus(): Promise<{ is_running: boolean; task_id: string | null }> {
+    return apiClient.get('/api/scan/status');
   }
 
   async getScanStats(): Promise<ScanStats> {

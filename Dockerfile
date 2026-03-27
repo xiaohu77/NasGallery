@@ -25,18 +25,23 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# 添加 non-free 仓库源（替换原有 sources.list）
+RUN rm -f /etc/apt/sources.list.d/debian.sources && \
+    echo "deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware" > /etc/apt/sources.list && \
+    echo "deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware" >> /etc/apt/sources.list
+
 # 安装运行时依赖，包括 Intel GPU 支持
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sqlite3 \
     tini \
-    # Intel GPU 驱动和 OpenCL 运行时
-    intel-opencl-icd \
-    intel-media-va-driver \
-    libigc-dev \
-    intel-gpu-tools \
+    # Intel GPU 和 OpenCL 运行时
+    mesa-opencl-icd \
+    intel-media-va-driver-non-free \
+    # OpenCL 通用库
+    ocl-icd-libopencl1 \
     # OpenVINO 运行时依赖
-    libtbb-dev \
-    libpugixml-dev \
+    libtbb12 \
+    libpugixml1v5 \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制虚拟环境

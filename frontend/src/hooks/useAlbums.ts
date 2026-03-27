@@ -82,7 +82,7 @@ function albumsReducer(state: AlbumsState, action: AlbumsAction): AlbumsState {
 }
 
 export const useAlbums = (
-  categoryType: 'org' | 'model' | 'tag' | null,
+  categoryType: 'org' | 'model' | 'cosplayer' | 'character' | 'tag' | null,
   categoryId: number | null,
   pwaService: PWAService,
   searchQuery?: string

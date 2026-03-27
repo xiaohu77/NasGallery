@@ -27,12 +27,12 @@ async def get_albums(
 ):
     """
     获取图集列表，支持分页、标签筛选和搜索
-    tag_type: 'org', 'model', 'tag' - 按标签类型筛选
+    tag_type: 'org', 'model', 'cosplayer', 'character', 'tag' - 按标签类型筛选
     """
     query = db.query(Album).filter(Album.is_active == 1)
     
     # 按标签类型筛选
-    if tag_type and tag_type in ['org', 'model', 'tag']:
+    if tag_type and tag_type in ['org', 'model', 'cosplayer', 'character', 'tag']:
         # 获取该类型的所有标签ID
         tag_ids = [t.id for t in db.query(Tag.id).filter(Tag.type == tag_type, Tag.album_count > 0).all()]
         if tag_ids:
@@ -172,6 +172,124 @@ async def get_albums_by_model(
     # 通过模特关联的标签来筛选图集
     query = db.query(Album).join(AlbumTag).filter(
         AlbumTag.tag_id == model.tag_id,
+        Album.is_active == 1
+    )
+    
+    # 总数
+    total = query.count()
+    
+    # 分页查询
+    albums = query.order_by(Album.created_at.desc())\
+                 .offset((page - 1) * size)\
+                 .limit(size)\
+                 .all()
+    
+    # 构建响应
+    items = []
+    for album in albums:
+        cover_url = None
+        
+        if album.cover_path:
+            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
+        elif album.cover_image:
+            cover_url = f"/albums/{album.id}/images/{album.cover_image}"
+        
+        items.append(AlbumSummary(
+            id=album.id,
+            title=album.title,
+            cover_url=cover_url,
+            image_count=album.image_count or 0,
+            tags=[t.name for t in album.tags],
+            description=album.description
+        ))
+    
+    return PagedResponse(
+        total=total,
+        page=page,
+        size=size,
+        items=items
+    )
+
+
+@router.get("/cosplayer/{tag_id}", response_model=PagedResponse)
+async def get_albums_by_cosplayer(
+    tag_id: int,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """
+    根据 Cosplayer 筛选图集列表
+    """
+    from ...models import Tag
+    
+    # 验证标签是否存在且类型为 cosplayer
+    tag = db.query(Tag).filter(Tag.id == tag_id, Tag.type == 'cosplayer').first()
+    if not tag:
+        raise HTTPException(status_code=404, detail="Cosplayer 不存在")
+    
+    # 通过标签筛选图集
+    query = db.query(Album).join(AlbumTag).filter(
+        AlbumTag.tag_id == tag_id,
+        Album.is_active == 1
+    )
+    
+    # 总数
+    total = query.count()
+    
+    # 分页查询
+    albums = query.order_by(Album.created_at.desc())\
+                 .offset((page - 1) * size)\
+                 .limit(size)\
+                 .all()
+    
+    # 构建响应
+    items = []
+    for album in albums:
+        cover_url = None
+        
+        if album.cover_path:
+            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
+        elif album.cover_image:
+            cover_url = f"/albums/{album.id}/images/{album.cover_image}"
+        
+        items.append(AlbumSummary(
+            id=album.id,
+            title=album.title,
+            cover_url=cover_url,
+            image_count=album.image_count or 0,
+            tags=[t.name for t in album.tags],
+            description=album.description
+        ))
+    
+    return PagedResponse(
+        total=total,
+        page=page,
+        size=size,
+        items=items
+    )
+
+
+@router.get("/character/{tag_id}", response_model=PagedResponse)
+async def get_albums_by_character(
+    tag_id: int,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """
+    根据角色筛选图集列表
+    """
+    from ...models import Tag
+    
+    # 验证标签是否存在且类型为 character
+    tag = db.query(Tag).filter(Tag.id == tag_id, Tag.type == 'character').first()
+    if not tag:
+        raise HTTPException(status_code=404, detail="角色不存在")
+    
+    # 通过标签筛选图集
+    query = db.query(Album).join(AlbumTag).filter(
+        AlbumTag.tag_id == tag_id,
         Album.is_active == 1
     )
     
@@ -370,11 +488,23 @@ async def get_image_content(
             # 缩放处理
             if width or height:
                 image_data = ArchiveService.resize_image(image_data, width, height)
+                # 缩放后固定返回 JPEG
+                media_type = 'image/jpeg'
+            else:
+                # 根据文件扩展名确定媒体类型
+                ext = filename.lower().split('.')[-1]
+                media_type_map = {
+                    'jpg': 'image/jpeg',
+                    'jpeg': 'image/jpeg',
+                    'png': 'image/png',
+                    'webp': 'image/webp'
+                }
+                media_type = media_type_map.get(ext, 'image/jpeg')
             
             from fastapi.responses import Response
             return Response(
                 content=image_data,
-                media_type="image/jpeg",
+                media_type=media_type,
                 headers={
                     "Cache-Control": "public, max-age=31536000",  # 1年缓存
                     "ETag": f'"{cache_file.stat().st_mtime}"'
@@ -414,14 +544,26 @@ async def get_image_content(
     # 缩放处理
     if width or height:
         image_data = ArchiveService.resize_image(image_data, width, height)
+        # 缩放后固定返回 JPEG
+        media_type = 'image/jpeg'
+    else:
+        # 根据文件扩展名确定媒体类型
+        ext = filename.lower().split('.')[-1]
+        media_type_map = {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'webp': 'image/webp'
+        }
+        media_type = media_type_map.get(ext, 'image/jpeg')
     
     from fastapi.responses import Response
     return Response(
         content=image_data,
-        media_type="image/jpeg",
+        media_type=media_type,
         headers={
             "Cache-Control": "public, max-age=31536000",  # 1年缓存
-            "ETag": f'"{cache_file.stat().st_mtime}"'
+            "ETag": f'"{filename}"'
         }
     )
 

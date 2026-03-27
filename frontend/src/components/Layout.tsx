@@ -3,14 +3,14 @@ import Header from './Header'
 
 const Layout = (): JSX.Element => {
   const location = useLocation()
-  const showHeader = !location.pathname.startsWith('/album/')
+  const hideHeader = location.pathname.startsWith('/album/') || location.pathname.startsWith('/settings')
 
   return (
     <div className="min-h-screen bg-white dark:bg-black">
-      {showHeader && <Header />}
+      {!hideHeader && <Header />}
       <main 
         key={location.pathname} 
-        className={`page-transition ${showHeader ? 'pt-28' : 'pt-0'}`}
+        className={`page-transition ${hideHeader ? 'pt-0' : 'pt-28'}`}
       >
         <Outlet />
       </main>

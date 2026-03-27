@@ -39,12 +39,16 @@ const Home = (): JSX.Element => {
     { path: '/' },
     { path: '/org' },
     { path: '/model' },
+    { path: '/cosplayer' },
+    { path: '/character' },
   ]
   
   const getCurrentTabIndex = useCallback(() => {
     const path = location.pathname
     if (path.startsWith('/org')) return 1
     if (path.startsWith('/model')) return 2
+    if (path.startsWith('/cosplayer')) return 3
+    if (path.startsWith('/character')) return 4
     return 0
   }, [location.pathname])
   
@@ -85,14 +89,14 @@ const Home = (): JSX.Element => {
   const getCategoryInfo = useCallback(() => {
     const path = location.pathname
     
-    if (path === '/org') {
-      return { type: 'org' as const, categoryId: null }
-    } else if (path === '/model') {
-      return { type: 'model' as const, categoryId: null }
-    } else if (path.startsWith('/org/')) {
-      return { type: 'org' as const, categoryId: parseInt(id || '0') }
-    } else if (path.startsWith('/model/')) {
-      return { type: 'model' as const, categoryId: parseInt(id || '0') }
+    if (path === '/org' || path.startsWith('/org/')) {
+      return { type: 'org' as const, categoryId: path.includes('/org/') ? parseInt(id || '0') : null }
+    } else if (path === '/model' || path.startsWith('/model/')) {
+      return { type: 'model' as const, categoryId: path.includes('/model/') ? parseInt(id || '0') : null }
+    } else if (path === '/cosplayer' || path.startsWith('/cosplayer/')) {
+      return { type: 'cosplayer' as const, categoryId: path.includes('/cosplayer/') ? parseInt(id || '0') : null }
+    } else if (path === '/character' || path.startsWith('/character/')) {
+      return { type: 'character' as const, categoryId: path.includes('/character/') ? parseInt(id || '0') : null }
     } else if (path.startsWith('/tag/')) {
       return { type: 'tag' as const, categoryId: parseInt(id || '0') }
     }
@@ -135,7 +139,7 @@ const Home = (): JSX.Element => {
           loadMore()
         }
       },
-      { threshold: 0.1, rootMargin: '100px' }
+      { threshold: 0.1, rootMargin: '200px' }
     )
 
     observerRef.current = observer
@@ -150,7 +154,7 @@ const Home = (): JSX.Element => {
         observerRef.current = null
       }
     }
-  }, [hasMore, isLoadingMore, loadMore])
+  }, [hasMore, isLoadingMore, loadMore, albums?.length])
 
   // 滚动位置恢复 - 使用 ref 直接恢复，避免状态变化触发重渲染
   const hasRestoredScroll = useRef(false)

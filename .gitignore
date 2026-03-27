@@ -94,6 +94,7 @@ backend/data/images
 backend/data/ai_models
 backend/data/tmp
 backend/data/tmp/thumbnail
+backend/app/static
 backend/venv
 
 

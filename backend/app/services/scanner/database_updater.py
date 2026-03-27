@@ -87,19 +87,29 @@ class DatabaseUpdater:
             new_tags = []
             
             # 处理套图
-            for org_name in tag_info['org']:
+            for org_name in tag_info.get('org', []):
                 org_tag = self.get_or_create_tag(org_name, 'org', f'{org_name}套图')
                 org = self.get_or_create_organization(org_name, org_tag)
                 new_tags.append(org_tag)
             
             # 处理模特
-            for model_name in tag_info['model']:
+            for model_name in tag_info.get('model', []):
                 model_tag = self.get_or_create_tag(model_name, 'model', f'{model_name}模特')
                 model = self.get_or_create_model(model_name, model_tag)
                 new_tags.append(model_tag)
             
+            # 处理 Cosplayer
+            for cosplayer_name in tag_info.get('cosplayer', []):
+                cosplayer_tag = self.get_or_create_tag(cosplayer_name, 'cosplayer', f'{cosplayer_name} Cosplayer')
+                new_tags.append(cosplayer_tag)
+            
+            # 处理 Character
+            for character_name in tag_info.get('character', []):
+                character_tag = self.get_or_create_tag(character_name, 'character', f'{character_name} 角色')
+                new_tags.append(character_tag)
+            
             # 处理通用标签
-            for tag_name in tag_info['tags']:
+            for tag_name in tag_info.get('tags', []):
                 tag = self.get_or_create_tag(tag_name, 'tag', tag_name)
                 new_tags.append(tag)
             
@@ -151,7 +161,7 @@ class DatabaseUpdater:
             else:
                 # 文件夹图集：计算文件夹中所有图片的总大小
                 file_size = 0
-                image_extensions = {'.jpg', '.jpeg', '.png'}
+                image_extensions = {'.jpg', '.jpeg', '.png', '.webp'}
                 for item in album_path.iterdir():
                     if item.is_file() and item.suffix.lower() in image_extensions:
                         file_size += item.stat().st_size

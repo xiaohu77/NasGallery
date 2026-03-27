@@ -27,9 +27,11 @@ const AlbumHeader = ({ album, onBack }: AlbumHeaderProps) => {
               <polyline points="12 19 5 12 12 5" />
             </svg>
           </button>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{album.title}</h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">{album.description}</p>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white break-words">{album.title}</h1>
+            {album.description && (
+              <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm break-words">{album.description}</p>
+            )}
           </div>
         </div>
         <span className="text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">

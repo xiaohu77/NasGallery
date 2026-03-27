@@ -17,6 +17,8 @@ const mainTabs = [
   { id: 'all', label: '所有图集', path: '/' },
   { id: 'org', label: '刊物', path: '/org' },
   { id: 'model', label: '人物', path: '/model' },
+  { id: 'cosplayer', label: 'Cosplayer', path: '/cosplayer' },
+  { id: 'character', label: '角色', path: '/character' },
 ]
 
 const allSubTabs = [
@@ -68,6 +70,14 @@ const Header = () => {
       setActiveMainTab('model')
       const modelId = path.split('/')[2]
       setActiveSubTab(modelId || null)
+    } else if (path.startsWith('/cosplayer')) {
+      setActiveMainTab('cosplayer')
+      const cosplayerId = path.split('/')[2]
+      setActiveSubTab(cosplayerId || null)
+    } else if (path.startsWith('/character')) {
+      setActiveMainTab('character')
+      const characterId = path.split('/')[2]
+      setActiveSubTab(characterId || null)
     } else {
       setActiveMainTab('all')
       const sort = params.get('sort')
@@ -97,6 +107,18 @@ const Header = () => {
             name: m.name,
             count: m.album_count
           })))
+        } else if (activeMainTab === 'cosplayer') {
+          setSubCategories(categories.cosplayer.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            count: c.album_count
+          })))
+        } else if (activeMainTab === 'character') {
+          setSubCategories(categories.character.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            count: c.album_count
+          })))
         }
       } catch (e) {
         console.error('获取子分类失败:', e)
@@ -117,12 +139,15 @@ const Header = () => {
 
   const handleSubTabClick = (subId: string, subName?: string) => {
     if (activeMainTab === 'all') {
-      // 所有图集下的排序选项
       navigate(`/?sort=${subId}`)
     } else if (activeMainTab === 'org') {
       navigate(`/org/${subId}`)
     } else if (activeMainTab === 'model') {
       navigate(`/model/${subId}`)
+    } else if (activeMainTab === 'cosplayer') {
+      navigate(`/cosplayer/${subId}`)
+    } else if (activeMainTab === 'character') {
+      navigate(`/character/${subId}`)
     }
   }
 
@@ -266,8 +291,8 @@ const Header = () => {
             </button>
           ))}
           
-          {/* 刊物/人物的子分类 */}
-          {(activeMainTab === 'org' || activeMainTab === 'model') && subCategories.map((sub) => (
+          {/* 刊物/人物/Cosplayer/角色的子分类 */}
+          {(activeMainTab === 'org' || activeMainTab === 'model' || activeMainTab === 'cosplayer' || activeMainTab === 'character') && subCategories.map((sub) => (
             <button
               key={sub.id}
               onClick={() => handleSubTabClick(sub.id.toString())}

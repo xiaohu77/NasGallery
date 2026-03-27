@@ -36,12 +36,29 @@ async def _notify_scan_progress(task_id: str, data: Dict):
 
 def perform_scan(db: Session, scan_path: Path = None, task_id: str = None):
     """执行扫描任务（带进度回调）"""
+    from app.services.scanner import scan_albums
     try:
-        def progress_callback(data: Dict):
-            if task_id:
-                asyncio.run(_notify_scan_progress(task_id, data))
+        async def async_progress_callback(data: Dict):
+            if task_id and task_id in _scan_progress_callbacks:
+                callback = _scan_progress_callbacks[task_id]
+                try:
+                    if asyncio.iscoroutinefunction(callback):
+                        await callback(data)
+                    else:
+                        callback(data)
+                except Exception as e:
+                    print(f"通知进度失败: {e}")
         
-        results = scan_albums(db, scan_path, progress_callback=progress_callback)
+        def sync_progress_callback(data: Dict):
+            if task_id and task_id in _scan_progress_callbacks:
+                callback = _scan_progress_callbacks[task_id]
+                try:
+                    callback(data)
+                except Exception as e:
+                    print(f"通知进度失败: {e}")
+        
+        # 使用同步进度回调
+        results = scan_albums(db, scan_path, progress_callback=sync_progress_callback)
         return results
     except Exception as e:
         print(f"扫描失败: {e}")

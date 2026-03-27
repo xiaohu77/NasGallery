@@ -56,9 +56,37 @@ async def get_categories(
         ) for tag in tags
     ]
     
+    # 获取 cosplayer 标签（按专辑数量从大到小排序），剔除关联图集数为0的标签
+    cosplayers = db.query(Tag).filter(Tag.type == 'cosplayer', Tag.album_count > 0).order_by(Tag.album_count.desc()).all()
+    cosplayer_list = [
+        TagResponse(
+            id=tag.id,
+            name=tag.name,
+            type=tag.type,
+            description=tag.description,
+            album_count=tag.album_count,
+            created_at=tag.created_at
+        ) for tag in cosplayers
+    ]
+    
+    # 获取 character 标签（按专辑数量从大到小排序），剔除关联图集数为0的标签
+    characters = db.query(Tag).filter(Tag.type == 'character', Tag.album_count > 0).order_by(Tag.album_count.desc()).all()
+    character_list = [
+        TagResponse(
+            id=tag.id,
+            name=tag.name,
+            type=tag.type,
+            description=tag.description,
+            album_count=tag.album_count,
+            created_at=tag.created_at
+        ) for tag in characters
+    ]
+    
     return CategoryTree(
         org=org_list,
         model=model_list,
+        cosplayer=cosplayer_list,
+        character=character_list,
         tag=tag_list
     )
 
@@ -114,4 +142,40 @@ async def get_tags(
             album_count=tag.album_count,
             created_at=tag.created_at
         ) for tag in tags
+    ]
+
+@router.get("/cosplayer", response_model=List[TagResponse])
+async def get_cosplayers(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """获取所有 cosplayer（按专辑数量从大到小排序），剔除关联图集数为0的分类"""
+    cosplayers = db.query(Tag).filter(Tag.type == 'cosplayer', Tag.album_count > 0).order_by(Tag.album_count.desc()).all()
+    return [
+        TagResponse(
+            id=tag.id,
+            name=tag.name,
+            type=tag.type,
+            description=tag.description,
+            album_count=tag.album_count,
+            created_at=tag.created_at
+        ) for tag in cosplayers
+    ]
+
+@router.get("/character", response_model=List[TagResponse])
+async def get_characters(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """获取所有角色（按专辑数量从大到小排序），剔除关联图集数为0的分类"""
+    characters = db.query(Tag).filter(Tag.type == 'character', Tag.album_count > 0).order_by(Tag.album_count.desc()).all()
+    return [
+        TagResponse(
+            id=tag.id,
+            name=tag.name,
+            type=tag.type,
+            description=tag.description,
+            album_count=tag.album_count,
+            created_at=tag.created_at
+        ) for tag in characters
     ]

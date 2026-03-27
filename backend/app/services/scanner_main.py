@@ -179,25 +179,23 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True, prog
                     # 使用metadata.json的数据
                     tag_info = metadata_extractor.parse_metadata_to_tags(metadata_json)
                     
-                    # 合并路径提取的机构/模特信息
-                    if path_tags['org']:
-                        tag_info['org'] = path_tags['org']
-                    if path_tags['model']:
-                        tag_info['model'] = path_tags['model']
+                    # 合并路径提取的标签信息
+                    for tag_type in ['org', 'model', 'cosplayer', 'character']:
+                        if path_tags.get(tag_type):
+                            tag_info[tag_type] = path_tags[tag_type]
                     
                     album_title = metadata_json.get('title', cbz_file.stem)
                     album_description = metadata_json.get('description')
-                    scan_logger.log_debug(f"使用metadata（机构/模特从路径获取）: {cbz_file.name}")
+                    scan_logger.log_debug(f"使用metadata（标签从路径获取）: {cbz_file.name}")
                 else:
                     # 降级使用文件名解析（只解析通用标签）
                     filename_tags = metadata_extractor.parse_filename(cbz_file.name)
                     tag_info = filename_tags
                     
-                    # 合并路径提取的机构/模特信息
-                    if path_tags['org']:
-                        tag_info['org'] = path_tags['org']
-                    if path_tags['model']:
-                        tag_info['model'] = path_tags['model']
+                    # 合并路径提取的标签信息
+                    for tag_type in ['org', 'model', 'cosplayer', 'character']:
+                        if path_tags.get(tag_type):
+                            tag_info[tag_type] = path_tags[tag_type]
                     
                     scan_logger.log_warning(cbz_file.name, "使用文件名解析（未找到metadata.json）")
                 
@@ -282,25 +280,23 @@ def scan_albums(db: Session, scan_path: Path = None, use_lock: bool = True, prog
                     # 使用metadata.json的数据
                     tag_info = metadata_extractor.parse_metadata_to_tags(metadata_json)
                     
-                    # 合并路径提取的机构/模特信息
-                    if path_tags['org']:
-                        tag_info['org'] = path_tags['org']
-                    if path_tags['model']:
-                        tag_info['model'] = path_tags['model']
+                    # 合并路径提取的标签信息
+                    for tag_type in ['org', 'model', 'cosplayer', 'character']:
+                        if path_tags.get(tag_type):
+                            tag_info[tag_type] = path_tags[tag_type]
                     
                     album_title = metadata_json.get('title', folder_path.name)
                     album_description = metadata_json.get('description')
-                    scan_logger.log_debug(f"使用metadata（机构/模特从路径获取）: {folder_path.name}")
+                    scan_logger.log_debug(f"使用metadata（标签从路径获取）: {folder_path.name}")
                 else:
                     # 降级使用文件夹名解析（只解析通用标签）
                     folder_tags = metadata_extractor.parse_folder_name(folder_path.name)
                     tag_info = folder_tags
                     
-                    # 合并路径提取的机构/模特信息
-                    if path_tags['org']:
-                        tag_info['org'] = path_tags['org']
-                    if path_tags['model']:
-                        tag_info['model'] = path_tags['model']
+                    # 合并路径提取的标签信息
+                    for tag_type in ['org', 'model', 'cosplayer', 'character']:
+                        if path_tags.get(tag_type):
+                            tag_info[tag_type] = path_tags[tag_type]
                     
                     scan_logger.log_warning(folder_path.name, "使用文件夹名解析（未找到metadata.json）")
                 

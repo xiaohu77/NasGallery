@@ -47,6 +47,24 @@ class StatsUpdater:
                         .count()
                     model.album_count = count
             
+            # 更新涉及的 cosplayer 标签统计
+            for cosplayer_name in tag_info.get('cosplayer', []):
+                tag = self.db.query(Tag).filter(Tag.name == cosplayer_name, Tag.type == 'cosplayer').first()
+                if tag:
+                    tag.album_count = self.db.query(AlbumTag)\
+                        .join(Album)\
+                        .filter(AlbumTag.tag_id == tag.id, Album.is_active == 1)\
+                        .count()
+            
+            # 更新涉及的 character 标签统计
+            for character_name in tag_info.get('character', []):
+                tag = self.db.query(Tag).filter(Tag.name == character_name, Tag.type == 'character').first()
+                if tag:
+                    tag.album_count = self.db.query(AlbumTag)\
+                        .join(Album)\
+                        .filter(AlbumTag.tag_id == tag.id, Album.is_active == 1)\
+                        .count()
+            
             # 更新涉及的标签统计
             for tag_name in tag_info.get('tags', []):
                 tag = self.db.query(Tag).filter(Tag.name == tag_name, Tag.type == 'tag').first()

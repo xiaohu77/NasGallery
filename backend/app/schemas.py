@@ -59,7 +59,7 @@ class AlbumCreate(AlbumBase):
 class AlbumSummary(BaseModel):
     id: int
     title: str
-    cover_url: str
+    cover_url: Optional[str] = None
     image_count: int
     tags: List[str] = []
     description: Optional[str] = None
@@ -83,6 +83,8 @@ class AlbumResponse(AlbumBase):
 class CategoryTree(BaseModel):
     org: List[OrganizationResponse] = []
     model: List[ModelResponse] = []
+    cosplayer: List[TagResponse] = []
+    character: List[TagResponse] = []
     tag: List[TagResponse] = []
 
 # 分页响应模型

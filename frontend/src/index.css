@@ -218,7 +218,7 @@
   animation: shimmer 1.5s infinite;
 }
 
-/* 列表项动画延迟 */
+/* 列表项动画延迟 - 已禁用
 .stagger-item {
   animation: bounce-in-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
 }
@@ -235,10 +235,11 @@
 .stagger-item:nth-child(10) { animation-delay: 450ms; }
 .stagger-item:nth-child(11) { animation-delay: 500ms; }
 .stagger-item:nth-child(12) { animation-delay: 550ms; }
+*/
 
 /* 页面切换过渡动画 */
 .page-transition {
-  animation: fade-in 0.2s ease-out;
+  animation: fade-in 0.15s ease-out;
 }
 
 /* 弹性滚动 */

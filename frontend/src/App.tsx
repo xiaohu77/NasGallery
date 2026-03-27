@@ -22,8 +22,12 @@ const HomeWrapper = () => {
     if (path === '/') return 'home-all';
     if (path === '/org') return 'home-org';
     if (path === '/model') return 'home-model';
+    if (path === '/cosplayer') return 'home-cosplayer';
+    if (path === '/character') return 'home-character';
     if (path.startsWith('/org/')) return 'home-org-detail';
     if (path.startsWith('/model/')) return 'home-model-detail';
+    if (path.startsWith('/cosplayer/')) return 'home-cosplayer-detail';
+    if (path.startsWith('/character/')) return 'home-character-detail';
     if (path.startsWith('/tag/')) return 'home-tag';
     return 'home';
   };
@@ -85,6 +89,10 @@ function App(): JSX.Element {
               <Route path="/org/:id" element={<HomeWrapper />} />
               <Route path="/model" element={<HomeWrapper />} />
               <Route path="/model/:id" element={<HomeWrapper />} />
+              <Route path="/cosplayer" element={<HomeWrapper />} />
+              <Route path="/cosplayer/:id" element={<HomeWrapper />} />
+              <Route path="/character" element={<HomeWrapper />} />
+              <Route path="/character/:id" element={<HomeWrapper />} />
               <Route path="/tag/:id" element={<HomeWrapper />} />
               <Route path="/album/:id" element={<AlbumDetailWrapper />} />
               <Route path="/settings" element={<Settings />} />

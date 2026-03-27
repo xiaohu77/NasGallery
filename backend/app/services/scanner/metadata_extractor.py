@@ -50,7 +50,7 @@ class MetadataExtractor:
     @staticmethod
     def parse_metadata_to_tags(metadata: Dict) -> Dict[str, List[str]]:
         """从metadata解析标签信息"""
-        result = {'org': [], 'model': [], 'tags': []}
+        result = {'org': [], 'model': [], 'cosplayer': [], 'character': [], 'tags': []}
         
         try:
             # 1. 套图解析
@@ -66,7 +66,19 @@ class MetadataExtractor:
                 if model_name:
                     result['model'].append(model_name)
             
-            # 3. 通用标签解析
+            # 3. Cosplayer 解析
+            if 'cosplayer' in metadata:
+                cosplayer_name = metadata['cosplayer']
+                if cosplayer_name:
+                    result['cosplayer'].append(cosplayer_name)
+            
+            # 4. Character 解析
+            if 'character' in metadata:
+                character_name = metadata['character']
+                if character_name:
+                    result['character'].append(character_name)
+            
+            # 5. 通用标签解析
             title = metadata.get('title', '')
             description = metadata.get('description', '')
             combined_text = title + ' ' + description
@@ -88,7 +100,7 @@ class MetadataExtractor:
         try:
             name = filename.replace('.cbz', '')
             
-            result = {'org': [], 'model': [], 'tags': []}
+            result = {'org': [], 'model': [], 'cosplayer': [], 'character': [], 'tags': []}
             
             # 通用标签解析
             keywords = settings.TAG_KEYWORDS.split(',') if settings.TAG_KEYWORDS else []
@@ -99,7 +111,7 @@ class MetadataExtractor:
                 
         except Exception as e:
             logger.error(f"解析文件名失败 {filename}: {e}")
-            result = {'org': [], 'model': [], 'tags': []}
+            result = {'org': [], 'model': [], 'cosplayer': [], 'character': [], 'tags': []}
         
         return result
     
@@ -107,7 +119,7 @@ class MetadataExtractor:
     def parse_folder_name(folder_name: str) -> Dict[str, List[str]]:
         """从文件夹名解析标签信息（备用方案）- 只解析通用标签，不解析机构和模特"""
         try:
-            result = {'org': [], 'model': [], 'tags': []}
+            result = {'org': [], 'model': [], 'cosplayer': [], 'character': [], 'tags': []}
             
             # 通用标签解析
             keywords = settings.TAG_KEYWORDS.split(',') if settings.TAG_KEYWORDS else []
@@ -120,7 +132,7 @@ class MetadataExtractor:
             
         except Exception as e:
             logger.error(f"解析文件夹名失败 {folder_name}: {e}")
-            return {'org': [], 'model': [], 'tags': []}
+            return {'org': [], 'model': [], 'cosplayer': [], 'character': [], 'tags': []}
     
     @staticmethod
     def parse_path_structure(relative_path: str, scan_root: str) -> Dict[str, List[str]]:
@@ -139,13 +151,13 @@ class MetadataExtractor:
             标签信息字典
         """
         try:
-            result = {'org': [], 'model': [], 'tags': []}
+            result = {'org': [], 'model': [], 'cosplayer': [], 'character': [], 'tags': []}
             
             # 获取相对路径（去掉扫描根目录）
             path_parts = Path(relative_path).parts
             
             if len(path_parts) >= 2:
-                # 检查第一级目录是否是 org 或 model
+                # 检查第一级目录类型
                 first_level = path_parts[0].lower()
                 
                 if first_level == 'org' and len(path_parts) >= 2:
@@ -159,19 +171,31 @@ class MetadataExtractor:
                     model_name = path_parts[1]
                     if model_name and not model_name.startswith('.'):
                         result['model'].append(model_name)
+                
+                elif first_level == 'cosplayer' and len(path_parts) >= 2:
+                    # cosplayer/Cosplayer名/图集
+                    cosplayer_name = path_parts[1]
+                    if cosplayer_name and not cosplayer_name.startswith('.'):
+                        result['cosplayer'].append(cosplayer_name)
+                
+                elif first_level == 'character' and len(path_parts) >= 2:
+                    # character/角色名/图集
+                    character_name = path_parts[1]
+                    if character_name and not character_name.startswith('.'):
+                        result['character'].append(character_name)
             
             return result
             
         except Exception as e:
             logger.error(f"解析路径结构失败 {relative_path}: {e}")
-            return {'org': [], 'model': [], 'tags': []}
+            return {'org': [], 'model': [], 'cosplayer': [], 'character': [], 'tags': []}
     
     @staticmethod
     def extract_folder_metadata(folder_path: Path) -> Dict:
         """提取文件夹图集元数据（图片列表和封面）"""
         try:
             # 获取图片文件列表
-            image_extensions = {'.jpg', '.jpeg', '.png'}
+            image_extensions = {'.jpg', '.jpeg', '.png', '.webp'}
             image_files = sorted([
                 f.name for f in folder_path.iterdir()
                 if f.is_file() and f.suffix.lower() in image_extensions
@@ -236,16 +260,20 @@ class MetadataExtractor:
         """提取CBZ文件元数据（图片列表和封面）"""
         try:
             with zipfile.ZipFile(file_path, 'r') as archive:
-                # 获取图片文件列表
+                # 获取图片文件列表（支持 webp 格式）
                 image_files = [f for f in archive.namelist()
-                              if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
+                              if f.lower().endswith(('.jpg', '.png', '.jpeg', '.webp'))]
                 image_files.sort()
                 
                 # 确定封面
                 cover_image = None
-                if 'cover.jpg' in image_files:
-                    cover_image = 'cover.jpg'
-                elif image_files:
+                # 优先查找标准封面文件名
+                for cover_name in ['cover.webp', 'cover.jpg', 'cover.jpeg', 'cover.png']:
+                    if cover_name in image_files:
+                        cover_image = cover_name
+                        break
+                # 降级使用第一张图片
+                if not cover_image and image_files:
                     cover_image = image_files[0]
                 
                 return {

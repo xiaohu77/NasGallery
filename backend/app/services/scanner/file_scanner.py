@@ -155,7 +155,7 @@ class FileScanner:
                 return False
             
             # 检查是否包含图片文件
-            image_extensions = {'.jpg', '.jpeg', '.png'}
+            image_extensions = {'.jpg', '.jpeg', '.png', '.webp'}
             for item in folder_path.iterdir():
                 if item.is_file() and item.suffix.lower() in image_extensions:
                     return True
@@ -213,7 +213,7 @@ class FileScanner:
             
             # 计算文件夹中图片的总大小
             total_size = 0
-            image_extensions = {'.jpg', '.jpeg', '.png'}
+            image_extensions = {'.jpg', '.jpeg', '.png', '.webp'}
             for item in folder_path.iterdir():
                 if item.is_file() and item.suffix.lower() in image_extensions:
                     total_size += item.stat().st_size

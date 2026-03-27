@@ -26,7 +26,7 @@ class ArchiveService:
             with zipfile.ZipFile(cbz_path, 'r') as archive:
                 # 获取所有图片文件
                 image_files = [f for f in archive.namelist()
-                              if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
+                              if f.lower().endswith(('.jpg', '.png', '.jpeg', '.webp'))]
                 
                 if not image_files:
                     print(f"⚠️  [警告] CBZ文件中没有图片: {cbz_path.name}")
@@ -100,7 +100,7 @@ class ArchiveService:
         try:
             with zipfile.ZipFile(cbz_path, 'r') as archive:
                 return sorted([f for f in archive.namelist()
-                             if f.lower().endswith(('.jpg', '.png', '.jpeg'))])
+                             if f.lower().endswith(('.jpg', '.png', '.jpeg', '.webp'))])
         except Exception as e:
             print(f"❌ [读取列表失败] {cbz_path.name}: {e}")
             return []
@@ -187,7 +187,7 @@ class FolderArchiveService:
         
         try:
             # 获取所有图片文件
-            image_extensions = {'.jpg', '.jpeg', '.png'}
+            image_extensions = {'.jpg', '.jpeg', '.png', '.webp'}
             image_files = sorted([
                 f.name for f in folder_path.iterdir()
                 if f.is_file() and f.suffix.lower() in image_extensions
@@ -266,7 +266,7 @@ class FolderArchiveService:
             图片文件名列表
         """
         try:
-            image_extensions = {'.jpg', '.jpeg', '.png'}
+            image_extensions = {'.jpg', '.jpeg', '.png', '.webp'}
             return sorted([
                 f.name for f in folder_path.iterdir()
                 if f.is_file() and f.suffix.lower() in image_extensions
