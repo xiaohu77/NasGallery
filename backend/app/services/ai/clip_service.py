@@ -45,7 +45,14 @@ class CLIPService:
             providers_info['gpu_providers'].append({
                 'name': 'OpenVINOExecutionProvider',
                 'display_name': gpu_name or 'Intel GPU',
-                'description': 'Intel 集成显卡加速'
+                'description': 'Intel 集成显卡加速 (OpenVINO)'
+            })
+        
+        if 'AzureExecutionProvider' in available:
+            providers_info['gpu_providers'].append({
+                'name': 'AzureExecutionProvider',
+                'display_name': gpu_name or 'Intel GPU',
+                'description': 'Intel 集成显卡加速 (Azure)'
             })
         
         if 'CUDAExecutionProvider' in available:
