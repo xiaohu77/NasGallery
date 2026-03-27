@@ -187,3 +187,17 @@ async def load_model(
 async def get_providers():
     """获取可用的执行提供程序"""
     return clip_service.get_available_providers()
+
+
+@router.post("/scan/pause")
+async def pause_scan():
+    """暂停扫描"""
+    embedding_scanner.pause_scan()
+    return {"success": True, "message": "扫描已暂停"}
+
+
+@router.post("/scan/resume")
+async def resume_scan():
+    """恢复扫描"""
+    embedding_scanner.resume_scan()
+    return {"success": True, "message": "扫描已恢复"}

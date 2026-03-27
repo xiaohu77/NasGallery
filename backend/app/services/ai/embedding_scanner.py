@@ -18,6 +18,8 @@ class EmbeddingScanner:
     def __init__(self):
         self.current_task_id: Optional[str] = None
         self._progress_callbacks: Dict[str, Callable] = {}
+        self._is_paused: bool = False
+        self._pause_lock = asyncio.Lock()
     
     def register_progress_callback(self, task_id: str, callback: Callable):
         """注册进度回调"""
@@ -27,6 +29,19 @@ class EmbeddingScanner:
         """取消注册进度回调"""
         if task_id in self._progress_callbacks:
             del self._progress_callbacks[task_id]
+    
+    def pause_scan(self):
+        """暂停扫描"""
+        self._is_paused = True
+    
+    def resume_scan(self):
+        """恢复扫描"""
+        self._is_paused = False
+    
+    async def _check_pause(self):
+        """检查是否暂停"""
+        while self._is_paused:
+            await asyncio.sleep(0.5)
     
     async def _notify_progress(self, task_id: str, data: Dict[str, Any]):
         """通知进度更新"""
@@ -120,6 +135,9 @@ class EmbeddingScanner:
             
             for album in albums:
                 try:
+                    # 检查是否暂停
+                    await self._check_pause()
+                    
                     # 检查是否已有向量
                     existing = db.query(AlbumEmbedding).filter(
                         AlbumEmbedding.album_id == album.id
@@ -136,8 +154,8 @@ class EmbeddingScanner:
                         failed += 1
                         continue
                     
-                    # 编码图片
-                    embedding = clip_service.encode_image(cover_data)
+                    # 编码图片 - 使用线程池执行CPU密集型操作
+                    embedding = await asyncio.to_thread(clip_service.encode_image, cover_data)
                     if embedding is None:
                         logger.warning(f"编码失败: {album.id}")
                         failed += 1
@@ -172,10 +190,14 @@ class EmbeddingScanner:
                     task.failed_albums = failed
                     db.commit()
                     
+                    # 每处理完一个图片后让出CPU控制权，避免CPU满载
+                    await asyncio.sleep(0)
+                    
                 except Exception as e:
                     logger.error(f"处理图集失败 {album.id}: {e}")
                     failed += 1
                     db.rollback()
+                    await asyncio.sleep(0)
             
             # 任务完成
             task.status = 'completed'
