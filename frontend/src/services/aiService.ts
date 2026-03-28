@@ -65,6 +65,9 @@ export interface AISearchResponse {
   query: string
   results: AISearchResult[]
   total: number
+  page: number
+  size: number
+  has_more: boolean
 }
 
 export interface StartScanResponse {
@@ -150,9 +153,9 @@ class AIService {
   /**
    * AI 搜索
    */
-  async search(query: string, limit: number = 100): Promise<AISearchResponse> {
+  async search(query: string, limit: number = 20, page: number = 1): Promise<AISearchResponse> {
     const response = await fetch(
-      `${this.baseUrl}/search?q=${encodeURIComponent(query)}&limit=${limit}`
+      `${this.baseUrl}/search?q=${encodeURIComponent(query)}&limit=${limit}&page=${page}`
     )
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
