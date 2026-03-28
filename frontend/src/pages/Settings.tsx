@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { PWAService } from '../services/pwaService'
-import { aiService, AIStatus, ScanTaskStatus } from '../services/aiService'
-import type { ScanStats, OrphanStats } from '../types/album'
+import { aiService, AIStatus, ScanTaskStatus as AIScanTaskStatus } from '../services/aiService'
+import type { ScanStats, OrphanStats, ScanTaskStatus } from '../types/album'
 
 // 获取当前使用的 GPU 名称
 const getCurrentGpuName = (aiStatus: AIStatus | null): string => {
@@ -134,7 +134,7 @@ const Settings = (): JSX.Element => {
   } | null>(null)
   const [pwaService] = useState(() => new PWAService())
   const [aiStatus, setAiStatus] = useState<AIStatus | null>(null)
-  const [aiTaskStatus, setAiTaskStatus] = useState<ScanTaskStatus | null>(null)
+  const [aiTaskStatus, setAiTaskStatus] = useState<AIScanTaskStatus | null>(null)
   const [selectedProvider, setSelectedProvider] = useState<string>('')
   const [scanProgress, setScanProgress] = useState<{
     status: 'idle' | 'running' | 'completed' | 'failed'
@@ -176,6 +176,28 @@ const Settings = (): JSX.Element => {
           const API_BASE = import.meta.env.DEV 
             ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
             : window.location.origin
+          
+          // 使用最新的任务ID
+          const taskId = status.running_task
+          
+          // 如果有最新任务信息，更新状态
+          if (status.latest_task) {
+            const latestTask = status.latest_task
+            setScanProgress({
+              status: latestTask.status === 'running' ? 'running' : latestTask.status === 'completed' ? 'completed' : 'failed',
+              total: latestTask.total || 0,
+              processed: latestTask.processed || 0,
+              progress: latestTask.progress || 0,
+              current_file: latestTask.current_file,
+              new_albums: latestTask.new_albums || 0,
+              updated_albums: latestTask.updated_albums || 0
+            })
+            
+            if (latestTask.status !== 'running') {
+              setLoading(null)
+              return
+            }
+          }
           
           const eventSource = new EventSource(`${API_BASE}/api/scan/progress`)
           

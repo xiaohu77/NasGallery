@@ -140,3 +140,26 @@ class AIScanTask(Base):
     
     def __repr__(self):
         return f"<AIScanTask(task_id='{self.task_id}', status='{self.status}')>"
+
+
+# 扫描任务状态表
+class ScanTask(Base):
+    __tablename__ = "scan_tasks"
+    
+    id = Column(Integer, primary_key=True)
+    task_id = Column(String, unique=True, nullable=False)  # UUID
+    status = Column(String, default='pending')  # pending, running, completed, failed
+    scan_type = Column(String, default='incremental')  # incremental, full
+    total_files = Column(Integer, default=0)
+    processed_files = Column(Integer, default=0)
+    new_albums = Column(Integer, default=0)
+    updated_albums = Column(Integer, default=0)
+    failed_files = Column(Integer, default=0)
+    current_file = Column(String)
+    error_message = Column(String)
+    started_at = Column(DateTime)
+    completed_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<ScanTask(task_id='{self.task_id}', status='{self.status}')>"

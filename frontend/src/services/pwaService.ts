@@ -1,5 +1,5 @@
 import { apiClient } from './apiInterceptor';
-import type { ScanResponse, ScanStats, OrphanStats } from '../types/album';
+import type { ScanResponse, ScanStats, OrphanStats, ScanTaskStatus } from '../types/album';
 
 // 导出类
 export class PWAService {
@@ -116,7 +116,7 @@ export class PWAService {
     return apiClient.post('/api/scan/sync');
   }
 
-  async getScanStatus(): Promise<{ is_running: boolean; task_id: string | null }> {
+  async getScanStatus(): Promise<{ is_running: boolean; running_task: string | null; latest_task: ScanTaskStatus | null }> {
     return apiClient.get('/api/scan/status');
   }
 

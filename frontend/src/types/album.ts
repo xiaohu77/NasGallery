@@ -166,3 +166,21 @@ export interface OrphanStats {
   orphan_models: number
   total_orphans: number
 }
+
+// 扫描任务状态类型
+export interface ScanTaskStatus {
+  task_id: string
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'no_task'
+  scan_type?: string
+  total: number
+  processed: number
+  new_albums: number
+  updated_albums: number
+  failed: number
+  progress: number
+  current_file?: string
+  error?: string
+  message?: string
+  started_at?: string
+  completed_at?: string
+}
