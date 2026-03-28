@@ -138,6 +138,24 @@ const Home = (): JSX.Element => {
     saveScrollPosition(target.scrollTop);
   }, [saveScrollPosition])
 
+  // 加载更多 AI 搜索结果
+  const loadMoreAiResults = useCallback(async () => {
+    if (!aiSearchHasMore || aiSearchLoadingMore || !currentAiQuery) return
+    
+    setAiSearchLoadingMore(true)
+    try {
+      const nextPage = aiSearchPage + 1
+      const response = await aiService.search(currentAiQuery, 20, nextPage)
+      setAiSearchResults(prev => [...prev, ...response.results])
+      setAiSearchHasMore(response.has_more)
+      setAiSearchPage(nextPage)
+    } catch (err) {
+      console.error('加载更多失败:', err)
+    } finally {
+      setAiSearchLoadingMore(false)
+    }
+  }, [aiSearchHasMore, aiSearchLoadingMore, currentAiQuery, aiSearchPage])
+
   useEffect(() => {
     // 确定使用哪个加载更多函数和状态
     const isAiSearch = mode === 'ai' && query
@@ -217,24 +235,6 @@ const Home = (): JSX.Element => {
       setCurrentAiQuery('')
     }
   }, [mode, query])
-
-  // 加载更多 AI 搜索结果
-  const loadMoreAiResults = useCallback(async () => {
-    if (!aiSearchHasMore || aiSearchLoadingMore || !currentAiQuery) return
-    
-    setAiSearchLoadingMore(true)
-    try {
-      const nextPage = aiSearchPage + 1
-      const response = await aiService.search(currentAiQuery, 20, nextPage)
-      setAiSearchResults(prev => [...prev, ...response.results])
-      setAiSearchHasMore(response.has_more)
-      setAiSearchPage(nextPage)
-    } catch (err) {
-      console.error('加载更多失败:', err)
-    } finally {
-      setAiSearchLoadingMore(false)
-    }
-  }, [aiSearchHasMore, aiSearchLoadingMore, currentAiQuery, aiSearchPage])
 
   // 重试加载
   const handleRetry = () => {
