@@ -116,9 +116,9 @@ const ActionButton = ({
 
 // 统计数值组件
 const StatValue = ({ value, label }: { value: number | string, label: string }) => (
-  <div className="text-center">
-    <div className="text-lg font-semibold text-gray-900 dark:text-white">{value}</div>
-    <div className="text-[10px] text-gray-400 mt-0.5">{label}</div>
+  <div className="flex items-center justify-between">
+    <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
+    <span className="text-sm font-semibold text-gray-900 dark:text-white">{value}</span>
   </div>
 )
 
@@ -533,16 +533,14 @@ const Settings = (): JSX.Element => {
 
         {/* 统计卡片 - 毛玻璃效果 */}
         {scanStats && (
-          <div className="backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 rounded-3xl p-6 mb-6">
-            <div className="grid grid-cols-5 gap-3">
-              <StatValue value={scanStats.total_albums} label="图集" />
-              <StatValue value={scanStats.total_images} label="图片" />
-              <StatValue value={scanStats.total_size_mb} label="MB" />
-              <StatValue value={scanStats.recent_scans_today} label="今日扫描" />
-              <StatValue value={orphanStats?.total_orphans ?? 0} label="孤儿" />
-            </div>
-            <div className="flex items-center justify-center gap-6 mt-5 pt-4 border-t border-gray-200/50 dark:border-gray-700/50 text-xs text-gray-500">
-              <span>标签 <span className="text-gray-700 dark:text-gray-300 font-semibold">{scanStats.tags}</span></span>
+          <div className="backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 rounded-3xl p-5 mb-6 space-y-3">
+            <StatValue value={scanStats.total_albums} label="图集" />
+            <StatValue value={scanStats.total_images} label="图片" />
+            <StatValue value={scanStats.total_size_mb} label="存储大小 (MB)" />
+            <StatValue value={scanStats.recent_scans_today} label="今日扫描" />
+            <StatValue value={orphanStats?.total_orphans ?? 0} label="孤儿数据" />
+            <div className="pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
+              <StatValue value={scanStats.tags} label="标签" />
             </div>
           </div>
         )}
