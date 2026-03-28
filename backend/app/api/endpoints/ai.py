@@ -135,7 +135,8 @@ async def scan_progress_stream(db: Session = Depends(get_db)):
 @router.get("/search")
 async def ai_search(
     q: str = Query(..., description="搜索文本"),
-    limit: int = Query(20, ge=1, le=100, description="返回数量"),
+    limit: int = Query(100, ge=1, le=500, description="返回数量"),
+    min_similarity: float = Query(0.0, ge=0.0, le=1.0, description="最低相似度"),
     db: Session = Depends(get_db)
 ):
     """以文搜图集"""
@@ -159,7 +160,7 @@ async def ai_search(
             detail="没有可用的向量数据，请先运行 AI 扫描"
         )
     
-    results = await embedding_scanner.search_by_text(db, q, limit)
+    results = await embedding_scanner.search_by_text(db, q, limit, min_similarity)
     
     return {
         "query": q,

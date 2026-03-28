@@ -303,7 +303,7 @@ class EmbeddingScanner:
             'model_info': clip_service.get_model_info()
         }
     
-    async def search_by_text(self, db: Session, query: str, limit: int = 20) -> list:
+    async def search_by_text(self, db: Session, query: str, limit: int = 100, min_similarity: float = 0.0) -> list:
         """
         以文搜图集
         
@@ -311,6 +311,7 @@ class EmbeddingScanner:
             db: 数据库会话
             query: 搜索文本
             limit: 返回数量限制
+            min_similarity: 最低相似度阈值
             
         Returns:
             排序后的图集列表
@@ -336,6 +337,10 @@ class EmbeddingScanner:
                 
                 # 计算相似度
                 similarity = clip_service.compute_similarity(query_embedding, album_embedding)
+                
+                # 过滤低于阈值的结果
+                if similarity < min_similarity:
+                    continue
                 
                 # 获取图集信息
                 album = db.query(Album).filter(Album.id == emb.album_id).first()

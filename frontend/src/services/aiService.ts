@@ -150,7 +150,7 @@ class AIService {
   /**
    * AI 搜索
    */
-  async search(query: string, limit: number = 20): Promise<AISearchResponse> {
+  async search(query: string, limit: number = 100): Promise<AISearchResponse> {
     const response = await fetch(
       `${this.baseUrl}/search?q=${encodeURIComponent(query)}&limit=${limit}`
     )
