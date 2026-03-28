@@ -90,25 +90,25 @@ const Home = (): JSX.Element => {
   const mode = searchMode()
   
   // 从URL路径提取分类类型和ID
-  const getCategoryInfo = useCallback(() => {
+  const categoryType = (() => {
     const path = location.pathname
-    
-    if (path === '/org' || path.startsWith('/org/')) {
-      return { type: 'org' as const, categoryId: path.includes('/org/') ? parseInt(id || '0') : null }
-    } else if (path === '/model' || path.startsWith('/model/')) {
-      return { type: 'model' as const, categoryId: path.includes('/model/') ? parseInt(id || '0') : null }
-    } else if (path === '/cosplayer' || path.startsWith('/cosplayer/')) {
-      return { type: 'cosplayer' as const, categoryId: path.includes('/cosplayer/') ? parseInt(id || '0') : null }
-    } else if (path === '/character' || path.startsWith('/character/')) {
-      return { type: 'character' as const, categoryId: path.includes('/character/') ? parseInt(id || '0') : null }
-    } else if (path.startsWith('/tag/')) {
-      return { type: 'tag' as const, categoryId: parseInt(id || '0') }
-    }
-    
-    return { type: null, categoryId: null }
-  }, [location.pathname, id])
+    if (path === '/org' || path.startsWith('/org/')) return 'org' as const
+    if (path === '/model' || path.startsWith('/model/')) return 'model' as const
+    if (path === '/cosplayer' || path.startsWith('/cosplayer/')) return 'cosplayer' as const
+    if (path === '/character' || path.startsWith('/character/')) return 'character' as const
+    if (path.startsWith('/tag/')) return 'tag' as const
+    return null
+  })()
   
-  const { type: categoryType, categoryId } = getCategoryInfo()
+  const categoryId = (() => {
+    const path = location.pathname
+    if (path.startsWith('/org/')) return parseInt(id || '0') || null
+    if (path.startsWith('/model/')) return parseInt(id || '0') || null
+    if (path.startsWith('/cosplayer/')) return parseInt(id || '0') || null
+    if (path.startsWith('/character/')) return parseInt(id || '0') || null
+    if (path.startsWith('/tag/')) return parseInt(id || '0') || null
+    return null
+  })()
   
   // 使用增强的Hook
   const {

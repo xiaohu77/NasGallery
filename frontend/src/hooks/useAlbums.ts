@@ -183,13 +183,18 @@ export const useAlbums = (
 
   // 当分类变化时，从缓存恢复或重新加载
   useEffect(() => {
+    // 清除当前状态，确保分类切换时显示loading
+    dispatch({ type: 'START_LOADING' });
+    
     const loadData = async () => {
+      // 每次都重新获取最新的参数
+      const currentStateKey = CacheKeys.state.albums(categoryType, categoryId, searchQuery);
       const savedState = sessionState.get<{
         albums: AlbumCard[];
         page: number;
         hasMore: boolean;
         scrollPosition: number;
-      }>(stateKey);
+      }>(currentStateKey);
 
       if (savedState && savedState.albums.length > 0) {
         dispatch({
@@ -199,9 +204,19 @@ export const useAlbums = (
         return;
       }
 
-      dispatch({ type: 'START_LOADING' });
+      // 根据当前参数决定调用哪个 API
       try {
-        const response = await fetchData(1);
+        let response;
+        if (categoryType && !categoryId) {
+          response = await pwaService.getAlbums(1, 20, categoryType);
+        } else if (categoryType && categoryId) {
+          response = await pwaService.getAlbumsByCategory(categoryType, categoryId, 1, 20);
+        } else if (searchQuery) {
+          response = await pwaService.searchAlbums(searchQuery, 1, 20);
+        } else {
+          response = await pwaService.getAlbums(1, 20);
+        }
+        
         const newAlbums = response.items.map(transformAlbum);
         const hasMoreData = response.page * response.size < response.total;
         dispatch({ type: 'LOAD_SUCCESS', payload: { albums: newAlbums, page: 1, hasMore: hasMoreData } });
@@ -211,7 +226,7 @@ export const useAlbums = (
       }
     };
     loadData();
-  }, [stateKey, categoryType, categoryId, fetchData, transformAlbum, saveState]);
+  }, [categoryType, categoryId, searchQuery]);
 
   return {
     albums: state.albums,
