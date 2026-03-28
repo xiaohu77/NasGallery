@@ -32,10 +32,6 @@ const Home = (): JSX.Element => {
   const [aiSearchResults, setAiSearchResults] = useState<AISearchResult[]>([])
   const [aiSearchLoading, setAiSearchLoading] = useState(false)
   const [aiSearchError, setAiSearchError] = useState<string | null>(null)
-  const [aiSearchHasMore, setAiSearchHasMore] = useState(false)
-  const [aiSearchPage, setAiSearchPage] = useState(1)
-  const [aiSearchLoadingMore, setAiSearchLoadingMore] = useState(false)
-  const [currentAiQuery, setCurrentAiQuery] = useState('')
   
   // 滑动切换分类
   const touchStartX = useRef(0)
@@ -157,18 +153,12 @@ const Home = (): JSX.Element => {
   }, [aiSearchHasMore, aiSearchLoadingMore, currentAiQuery, aiSearchPage])
 
   useEffect(() => {
-    // 确定使用哪个加载更多函数和状态
-    const isAiSearch = mode === 'ai' && query
-    const canLoadMore = isAiSearch ? aiSearchHasMore : hasMore
-    const isLoading = isAiSearch ? aiSearchLoadingMore : isLoadingMore
-    const loadMoreFn = isAiSearch ? loadMoreAiResults : loadMore
-    
-    if (!canLoadMore || isLoading) return
+    if (!hasMore || isLoadingMore) return
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && canLoadMore && !isLoading) {
-          loadMoreFn()
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadMore()
         }
       },
       { threshold: 0.1, rootMargin: '200px' }
@@ -186,7 +176,7 @@ const Home = (): JSX.Element => {
         observerRef.current = null
       }
     }
-  }, [hasMore, isLoadingMore, loadMore, mode, query, aiSearchHasMore, aiSearchLoadingMore, loadMoreAiResults])
+  }, [hasMore, isLoadingMore, loadMore, albums?.length])
 
   // 滚动位置恢复 - 使用 ref 直接恢复，避免状态变化触发重渲染
   const hasRestoredScroll = useRef(false)
@@ -208,15 +198,10 @@ const Home = (): JSX.Element => {
         setAiSearchLoading(true)
         setAiSearchError(null)
         setAiSearchResults([])
-        setAiSearchPage(1)
-        setAiSearchHasMore(false)
-        setCurrentAiQuery(query)
         
         try {
-          const response = await aiService.search(query, 20, 1)
+          const response = await aiService.search(query)
           setAiSearchResults(response.results)
-          setAiSearchHasMore(response.has_more)
-          setAiSearchPage(1)
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : 'AI 搜索失败'
           setAiSearchError(errorMessage)
@@ -230,9 +215,6 @@ const Home = (): JSX.Element => {
     } else {
       setAiSearchResults([])
       setAiSearchError(null)
-      setAiSearchHasMore(false)
-      setAiSearchPage(1)
-      setCurrentAiQuery('')
     }
   }, [mode, query])
 
@@ -337,42 +319,16 @@ const Home = (): JSX.Element => {
               <SkeletonCard key={index} />
             ))
           ) : aiSearchResults.length > 0 ? (
-            <>
-              {aiSearchResults.map((result, index) => {
-                const album = {
-                  id: result.album_id.toString(),
-                  title: result.title,
-                  description: '',
-                  coverImage: result.cover_url ? `${API_BASE}/api${result.cover_url}` : '',
-                  imageCount: result.image_count || 0
-                }
-                return renderAlbumCard(album, result.similarity, index)
-              })}
-              
-              {/* 加载更多指示器 */}
-              {aiSearchHasMore && (
-                <div
-                  ref={loadMoreRef}
-                  className="load-more-trigger col-span-full flex justify-center py-4"
-                >
-                  {aiSearchLoadingMore ? (
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                      <div className="w-4 h-4 border-2 border-slate-300 dark:border-slate-700 border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-sm">加载中...</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-slate-400">下滑加载更多...</span>
-                  )}
-                </div>
-              )}
-              
-              {/* 无更多数据提示 */}
-              {!aiSearchHasMore && aiSearchResults.length > 0 && (
-                <div className="col-span-full text-center py-4 text-sm text-slate-400">
-                  已加载全部图集
-                </div>
-              )}
-            </>
+            aiSearchResults.map((result, index) => {
+              const album = {
+                id: result.album_id.toString(),
+                title: result.title,
+                description: '',
+                coverImage: result.cover_url ? `${API_BASE}/api${result.cover_url}` : '',
+                imageCount: result.image_count || 0
+              }
+              return renderAlbumCard(album, result.similarity, index)
+            })
           ) : (
             <div className="col-span-full text-center py-8 text-slate-500">
               没有找到匹配的图集
