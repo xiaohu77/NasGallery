@@ -156,19 +156,29 @@ const Home = (): JSX.Element => {
     }
   }, [aiSearchHasMore, aiSearchLoadingMore, currentAiQuery, aiSearchPage])
 
+  // 判断当前是否是AI搜索模式
+  const isAiSearch = mode === 'ai' && query
+
   useEffect(() => {
-    // 确定使用哪个加载更多函数和状态
-    const isAiSearch = mode === 'ai' && query
     const canLoadMore = isAiSearch ? aiSearchHasMore : hasMore
     const isLoading = isAiSearch ? aiSearchLoadingMore : isLoadingMore
-    const loadMoreFn = isAiSearch ? loadMoreAiResults : loadMore
     
     if (!canLoadMore || isLoading) return
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && canLoadMore && !isLoading) {
-          loadMoreFn()
+        if (entries[0].isIntersecting) {
+          // 重新检查最新的状态
+          const currentIsAiSearch = mode === 'ai' && query
+          if (currentIsAiSearch) {
+            if (aiSearchHasMore && !aiSearchLoadingMore) {
+              loadMoreAiResults()
+            }
+          } else {
+            if (hasMore && !isLoadingMore) {
+              loadMore()
+            }
+          }
         }
       },
       { threshold: 0.1, rootMargin: '200px' }
@@ -186,7 +196,7 @@ const Home = (): JSX.Element => {
         observerRef.current = null
       }
     }
-  }, [hasMore, isLoadingMore, loadMore, mode, query, aiSearchHasMore, aiSearchLoadingMore, loadMoreAiResults])
+  }, [isAiSearch, hasMore, isLoadingMore, loadMore, aiSearchHasMore, aiSearchLoadingMore, loadMoreAiResults, mode, query])
 
   // 滚动位置恢复 - 使用 ref 直接恢复，避免状态变化触发重渲染
   const hasRestoredScroll = useRef(false)
