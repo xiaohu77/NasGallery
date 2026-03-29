@@ -20,38 +20,84 @@ router = APIRouter(prefix="/api/albums", tags=["albums"])
 async def get_albums(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    tag_id: Optional[int] = None,
-    tag_type: Optional[str] = None,
-    search: Optional[str] = None,
+    search: Optional[str] = Query(None),
+    tag_type: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
-    获取图集列表，支持分页、标签筛选和搜索
-    tag_type: 'org', 'model', 'cosplayer', 'character', 'tag' - 按标签类型筛选
+    获取图集列表（分页）
+    
+    - page: 页码
+    - size: 每页数量（最大100）
+    - search: 搜索关键词（匹配标题和描述）
+    - tag_type: 按标签类型筛选
     """
     query = db.query(Album).filter(Album.is_active == 1)
     
-    # 按标签类型筛选
-    if tag_type and tag_type in ['org', 'model', 'cosplayer', 'character', 'tag']:
-        # 获取该类型的所有标签ID
-        tag_ids = [t.id for t in db.query(Tag.id).filter(Tag.type == tag_type, Tag.album_count > 0).all()]
-        if tag_ids:
-            query = query.join(AlbumTag).filter(AlbumTag.tag_id.in_(tag_ids)).distinct()
-        else:
-            # 没有该类型的标签，返回空
-            return PagedResponse(total=0, page=page, size=size, items=[])
-    # 按具体标签筛选
-    elif tag_id:
-        query = query.join(AlbumTag).filter(AlbumTag.tag_id == tag_id)
-    
-    # 搜索（支持标题和描述的模糊搜索）
+    # 搜索过滤
     if search:
-        from sqlalchemy import or_
         query = query.filter(
             or_(
                 Album.title.contains(search),
                 Album.description.contains(search)
             )
+        )
+    
+    # 标签类型过滤
+    if tag_type:
+        query = query.join(Album.tags).filter(Tag.type == tag_type)
+    
+    # 使用窗口函数获取总数（更高效）
+    from sqlalchemy import func
+    count_query = db.query(func.count(Album.id)).filter(Album.is_active == 1)
+    if search:
+        count_query = count_query.filter(
+            or_(
+                Album.title.contains(search),
+                Album.description.contains(search)
+            )
+        )
+    if tag_type:
+        count_query = count_query.join(Album.tags).filter(Tag.type == tag_type)
+    total = count_query.scalar()
+    
+    # 分页查询（使用子查询加载标签，避免N+1问题）
+    from sqlalchemy.orm import joinedload
+    albums = query.options(
+        joinedload(Album.tags)
+    ).order_by(Album.created_at.desc())\
+     .offset((page - 1) * size)\
+     .limit(size)\
+     .all()
+    
+    # 构建响应
+    items = []
+    for album in albums:
+        cover_url = None
+        
+        # 优先使用预提取的封面路径
+        if album.cover_path:
+            # 使用静态文件URL（基于CBZ文件名，WebP 封面）
+            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
+        elif album.cover_image:
+            # 降级：使用API接口（兼容旧数据）
+            cover_url = f"/albums/{album.id}/images/{album.cover_image}"
+        
+        items.append(AlbumSummary(
+            id=album.id,
+            title=album.title,
+            cover_url=cover_url,
+            image_count=album.image_count or 0,
+            tags=[t.name for t in album.tags],
+            description=album.description
+        ))
+    
+    return PagedResponse(
+        total=total,
+        page=page,
+        size=size,
+        items=items
+    )
         )
     
     # 总数

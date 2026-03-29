@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, BigInteger, ForeignKey, Table, LargeBinary, Float
+from sqlalchemy import Column, Integer, String, DateTime, BigInteger, ForeignKey, Table, LargeBinary, Float, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
@@ -10,6 +10,12 @@ class AlbumTag(Base):
     album_id = Column(Integer, ForeignKey('albums.id'), primary_key=True)
     tag_id = Column(Integer, ForeignKey('tags.id'), primary_key=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # 添加索引
+    __table_args__ = (
+        Index('idx_album_tags_album_id', 'album_id'),
+        Index('idx_album_tags_tag_id', 'tag_id'),
+    )
 
 # 标签表（基础分类单元）
 class Tag(Base):
@@ -84,6 +90,13 @@ class Album(Base):
     
     # 多对多标签关联
     tags = relationship("Tag", secondary="album_tags", backref="albums")
+    
+    # 添加索引
+    __table_args__ = (
+        Index('idx_albums_is_active', 'is_active'),
+        Index('idx_albums_created_at', 'created_at'),
+        Index('idx_albums_title', 'title'),
+    )
     
     def __repr__(self):
         return f"<Album(title='{self.title}', image_count={self.image_count})>"

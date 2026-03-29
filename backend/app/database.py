@@ -44,11 +44,26 @@ def get_db():
 
 def init_db():
     """
-    初始化数据库，创建所有表
+    初始化数据库，创建所有表和索引
     """
-    from .models import Album, Tag, Organization, Model, AlbumTag
+    from .models import Album, Tag, Organization, Model, AlbumTag, User, AlbumEmbedding, AIScanTask, ScanTask
     Base.metadata.create_all(bind=engine)
-    print("数据库表创建完成")
+    
+    # 创建额外的索引（如果不存在）
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        # Album 表索引
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_albums_is_active ON albums(is_active)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_albums_created_at ON albums(created_at)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_albums_title ON albums(title)"))
+        
+        # AlbumTag 表索引
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_album_tags_album_id ON album_tags(album_id)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_album_tags_tag_id ON album_tags(tag_id)"))
+        
+        conn.commit()
+    
+    print("数据库表和索引创建完成")
 
 def drop_db():
     """
