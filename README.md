@@ -24,13 +24,14 @@
 - 🖼️ **精美图集画廊** - 响应式瀑布流布局，支持灯箱查看
 - 🔍 **智能搜索** - 支持按标题、组织、模特、标签搜索图集
 - 🤖 **AI 以文搜图** - 基于 CLIP 模型的语义搜索，用自然语言描述查找图集
-- 🏷️ **分类体系** - 三级分类：组织 / 模特 / 标签
-- ⚡ **高性能** - 多级缓存系统，支持缩略图生成
+- 🏷️ **分类体系** - 一级分类：所有图集 / 刊物 / 人物 / Cosplayer / 角色
+- ⚡ **高性能** - 多级缓存系统，支持缩略图生成，优化大数据量查询
 - 📱 **PWA 支持** - 可安装的 Web 应用，支持离线访问
 - 🌙 **深色模式** - 内置主题切换支持
 - 🔐 **安全认证** - 基于 JWT 的身份验证和角色管理
-- 🚀 **自动扫描** - 自动扫描文件系统，发现新内容
+- 🚀 **自动扫描** - 异步扫描任务，支持断点续传
 - 🎮 **GPU 加速** - 支持 Intel GPU (OpenVINO) 和 NVIDIA GPU (CUDA) 加速 AI 推理
+- 📊 **扫描进度** - 实时显示扫描进度，支持暂停/恢复
 
 ## 🛠️ 技术栈
 
@@ -132,7 +133,7 @@ npm run dev
    - 用户名：`admin`
    - 密码：`admin123`
 
-2. 登录后进入扫描页面索引您的 CBZ 文件
+2. 登录后进入设置页面扫描您的 CBZ 文件
 
 3. 将 CBZ 文件放入 `data/images` 目录
 
@@ -185,6 +186,8 @@ pip install onnxruntime-gpu
 {
   "institution": "机构名称",
   "model": "模特名称",
+  "cosplayer": "Cosplayer 名称",
+  "character": "角色名称",
   "title": "图集标题",
   "description": "图集描述"
 }
@@ -194,8 +197,10 @@ pip install onnxruntime-gpu
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
-| `institution` | 是 | 套图组织/机构名称 |
-| `model` | 是 | 模特名称 |
+| `institution` | 否 | 套图组织/机构名称 |
+| `model` | 否 | 模特名称 |
+| `cosplayer` | 否 | Cosplayer 名称 |
+| `character` | 否 | 角色名称 |
 | `title` | 是 | 图集标题 |
 | `description` | 否 | 图集描述 |
 
@@ -223,9 +228,24 @@ pip install onnxruntime-gpu
 
 ```
 data/images/
-├── 优衣库__张三__75P.cbz
-├── 优衣库__张三__80P.cbz
-└── 机构名__模特名__100P/
+├── org/                    # 按机构分类
+│   ├── 优衣库/
+│   │   ├── 优衣库__张三__75P.cbz
+│   │   └── 优衣库__李四__80P.cbz
+│   └── ...
+├── model/                  # 按模特分类
+│   ├── 张三/
+│   │   └── 张三__写真集__100P.cbz
+│   └── ...
+├── cosplayer/              # 按 Cosplayer 分类
+│   ├── cosplayer_name/
+│   │   └── cosplay_album.cbz
+│   └── ...
+├── character/              # 按角色分类
+│   ├── character_name/
+│   │   └── character_album.cbz
+│   └── ...
+└── 机构名__模特名__100P/    # 文件夹图集
     ├── metadata.json
     ├── 001.jpg
     ├── 002.jpg
@@ -234,10 +254,12 @@ data/images/
 
 ### 自动分类
 
-系统会根据元数据自动提取以下标签：
+系统会根据元数据和目录结构自动提取以下标签：
 
-- **组织 (org)**: 从 `institution` 字段提取
-- **模特 (model)**: 从 `model` 字段提取
+- **刊物 (org)**: 从 `institution` 字段或 `org/` 目录提取
+- **人物 (model)**: 从 `model` 字段或 `model/` 目录提取
+- **Cosplayer (cosplayer)**: 从 `cosplayer` 字段或 `cosplayer/` 目录提取
+- **角色 (character)**: 从 `character` 字段或 `character/` 目录提取
 - **标签 (tags)**: 从 `title` 和 `description` 中匹配关键词
 
 支持的标签关键词：风景,人像,动漫,CG,厚涂,油画,漫画,水彩,国画
@@ -292,15 +314,22 @@ NasGallery/
 
 | 端点 | 方法 | 描述 |
 |------|------|------|
-| `/api/albums/` | GET | 获取图集列表 |
+| `/api/albums/` | GET | 获取图集列表（支持分页、搜索、筛选） |
 | `/api/albums/{id}` | GET | 获取图集详情 |
 | `/api/albums/{id}/images` | GET | 获取图集图片 |
-| `/api/categories/` | GET | 获取分类树 |
-| `/api/scan/` | POST | 启动图集扫描 |
+| `/api/categories/` | 获取分类树 |
+| `/api/categories/orgs` | GET | 获取机构列表 |
+| `/api/categories/models` | GET | 获取模特列表 |
+| `/api/categories/cosplayers` | GET | 获取 Cosplayer 列表 |
+| `/api/categories/characters` | GET | 获取角色列表 |
+| `/api/scan/` | POST | 启动图集扫描（异步） |
+| `/api/scan/status` | GET | 获取扫描状态 |
+| `/api/scan/progress` | GET | SSE 扫描进度流 |
 | `/api/ai/scan` | POST | 启动 AI 向量扫描 |
-| `/api/ai/search` | GET | AI 以文搜图 |
+| `/api/ai/search` | GET | AI 以文搜图（支持分页） |
 | `/api/ai/status` | GET | AI 功能状态 |
 | `/api/ai/model/load` | POST | 加载 AI 模型 |
+| `/api/auth/login` | POST | 用户登录 |
 
 ## 🔧 配置说明
 
@@ -308,7 +337,7 @@ NasGallery/
 
 | 变量 | 描述 | 默认值 |
 |------|------|--------|
-| `PROJECT_NAME` | 项目名称 | `GirlAtlas` |
+| `PROJECT_NAME` | 项目名称 | `NasGallery` |
 | `DATABASE_URL` | 数据库 URL | `sqlite:///./data/nasgallery.db` |
 | `SECRET_KEY` | JWT 密钥 | 自动生成 |
 | `ADMIN_USERNAME` | 管理员用户名 | `admin` |
