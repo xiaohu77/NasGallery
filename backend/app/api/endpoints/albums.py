@@ -98,45 +98,6 @@ async def get_albums(
         size=size,
         items=items
     )
-        )
-    
-    # 总数
-    total = query.count()
-    
-    # 分页查询
-    albums = query.order_by(Album.created_at.desc())\
-                 .offset((page - 1) * size)\
-                 .limit(size)\
-                 .all()
-    
-    # 构建响应
-    items = []
-    for album in albums:
-        cover_url = None
-        
-        # 优先使用预提取的封面路径
-        if album.cover_path:
-            # 使用静态文件URL（基于CBZ文件名，WebP 封面）
-            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
-        elif album.cover_image:
-            # 降级：使用API接口（兼容旧数据）
-            cover_url = f"/albums/{album.id}/images/{album.cover_image}"
-        
-        items.append(AlbumSummary(
-            id=album.id,
-            title=album.title,
-            cover_url=cover_url,
-            image_count=album.image_count or 0,
-            tags=[t.name for t in album.tags],
-            description=album.description
-        ))
-    
-    return PagedResponse(
-        total=total,
-        page=page,
-        size=size,
-        items=items
-    )
 
 
 @router.get("/org/{org_id}", response_model=PagedResponse)
