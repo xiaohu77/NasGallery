@@ -53,7 +53,8 @@ const Header = () => {
   // 是否显示 Tab 栏
   const showTabs = !location.pathname.startsWith('/album/') && 
                    !location.pathname.startsWith('/login') && 
-                   !location.pathname.startsWith('/settings')
+                   !location.pathname.startsWith('/settings') &&
+                   !location.pathname.startsWith('/about')
 
   // 根据当前路径设置活跃 tab
   useEffect(() => {
@@ -179,6 +180,11 @@ const Header = () => {
     setShowUserMenu(false)
   }
 
+  const handleAbout = () => {
+    navigate('/about')
+    setShowUserMenu(false)
+  }
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass">
       {/* 主导航栏 */}
@@ -236,6 +242,15 @@ const Header = () => {
                   >
                     <SettingsIcon className="w-4 h-4" />
                     设置
+                  </button>
+                  <button
+                    onClick={handleAbout}
+                    className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-500/10 flex items-center gap-3 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    关于
                   </button>
                   <button
                     onClick={handleLogout}

@@ -3,7 +3,7 @@ import Header from './Header'
 
 const Layout = (): JSX.Element => {
   const location = useLocation()
-  const hideHeader = location.pathname.startsWith('/album/') || location.pathname.startsWith('/settings')
+  const hideHeader = location.pathname.startsWith('/album/') || location.pathname.startsWith('/settings') || location.pathname.startsWith('/about')
 
   return (
     <div className="min-h-screen bg-white dark:bg-black">

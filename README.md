@@ -264,73 +264,6 @@ data/images/
 
 支持的标签关键词：风景,人像,动漫,CG,厚涂,油画,漫画,水彩,国画
 
-## 📁 项目结构
-
-```
-NasGallery/
-├── backend/
-│   ├── app/
-│   │   ├── api/endpoints/     # API 路由
-│   │   ├── services/
-│   │   │   ├── ai/            # AI 服务 (CLIP 模型)
-│   │   │   ├── scanner/       # 扫描服务
-│   │   │   └── ...
-│   │   ├── models.py          # 数据库模型
-│   │   ├── schemas.py         # Pydantic 模型
-│   │   ├── database.py        # 数据库配置
-│   │   └── main.py            # 应用入口
-│   ├── data/
-│   │   ├── images/            # CBZ 文件
-│   │   ├── ai_models/         # AI 模型文件
-│   │   │   └── chinese-clip/  # Chinese-CLIP ONNX 模型
-│   │   └── tmp/               # 缓存文件
-│   └── requirements.txt
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/        # React 组件
-│   │   ├── pages/            # 页面组件
-│   │   ├── hooks/            # 自定义 Hooks
-│   │   ├── contexts/         # React Context
-│   │   ├── services/         # API 服务
-│   │   └── types/            # TypeScript 类型
-│   ├── public/
-│   └── package.json
-│
-├── .env                       # 环境配置
-├── docker-compose.yml         # Docker Compose
-├── Dockerfile                 # Docker 镜像
-└── README.md
-```
-
-## 📡 API 文档
-
-服务启动后，访问以下地址查看 API 文档：
-
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-### 主要 API 端点
-
-| 端点 | 方法 | 描述 |
-|------|------|------|
-| `/api/albums/` | GET | 获取图集列表（支持分页、搜索、筛选） |
-| `/api/albums/{id}` | GET | 获取图集详情 |
-| `/api/albums/{id}/images` | GET | 获取图集图片 |
-| `/api/categories/` | 获取分类树 |
-| `/api/categories/orgs` | GET | 获取机构列表 |
-| `/api/categories/models` | GET | 获取模特列表 |
-| `/api/categories/cosplayers` | GET | 获取 Cosplayer 列表 |
-| `/api/categories/characters` | GET | 获取角色列表 |
-| `/api/scan/` | POST | 启动图集扫描（异步） |
-| `/api/scan/status` | GET | 获取扫描状态 |
-| `/api/scan/progress` | GET | SSE 扫描进度流 |
-| `/api/ai/scan` | POST | 启动 AI 向量扫描 |
-| `/api/ai/search` | GET | AI 以文搜图（支持分页） |
-| `/api/ai/status` | GET | AI 功能状态 |
-| `/api/ai/model/load` | POST | 加载 AI 模型 |
-| `/api/auth/login` | POST | 用户登录 |
-
 ## 🔧 配置说明
 
 ### 环境变量
@@ -357,15 +290,9 @@ docker build -t nasgallery .
 docker run -d -p 8000:8000 -v ./data:/app/data nasgallery
 ```
 
-## 🤝 贡献指南
+## 项目demo
 
-欢迎提交贡献！请随时提交 Pull Request。
-
-1. Fork 本仓库
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送分支 (`git push origin feature/amazing-feature`)
-5. 打开 Pull Request
+https://nasgallery.xiaohu777.cn/
 
 ## 📄 开源许可证
 

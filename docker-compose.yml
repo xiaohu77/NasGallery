@@ -2,12 +2,10 @@ version: '3.8'
 
 services:
   nasgallery:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: xiaohu77/nasgallery:latest
     container_name: nasgallery
     ports:
-      - "8000:8000"
+      - "8077:8000"
     volumes:
       # 数据库持久化
       - ./data/:/app/data/

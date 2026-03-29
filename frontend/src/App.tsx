@@ -9,6 +9,7 @@ import Home from './pages/Home'
 import AlbumDetail from './pages/AlbumDetail'
 import Login from './pages/Login'
 import Settings from './pages/Settings'
+import About from './pages/About'
 
 // 创建一个包装组件来管理 Home 页面的 key
 const HomeWrapper = () => {
@@ -96,6 +97,7 @@ function App(): JSX.Element {
               <Route path="/tag/:id" element={<HomeWrapper />} />
               <Route path="/album/:id" element={<AlbumDetailWrapper />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/about" element={<About />} />
             </Route>
           </Routes>
           <PWAInstallPrompt />
