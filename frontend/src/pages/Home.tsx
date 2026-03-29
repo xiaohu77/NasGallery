@@ -159,7 +159,17 @@ const Home = (): JSX.Element => {
   // 判断当前是否是AI搜索模式
   const isAiSearch = mode === 'ai' && query
 
-  useEffect(() => {
+  // 使用 ref callback 来设置 observer
+  const loadMoreRefCallback = useCallback((node: HTMLDivElement | null) => {
+    loadMoreRef.current = node
+    
+    if (!node) return
+    
+    // 清除旧的 observer
+    if (observerRef.current) {
+      observerRef.current.disconnect()
+    }
+    
     const canLoadMore = isAiSearch ? aiSearchHasMore : hasMore
     const isLoading = isAiSearch ? aiSearchLoadingMore : isLoadingMore
     
@@ -185,17 +195,7 @@ const Home = (): JSX.Element => {
     )
 
     observerRef.current = observer
-
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current)
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-        observerRef.current = null
-      }
-    }
+    observer.observe(node)
   }, [isAiSearch, hasMore, isLoadingMore, loadMore, aiSearchHasMore, aiSearchLoadingMore, loadMoreAiResults, mode, query])
 
   // 滚动位置恢复 - 使用 ref 直接恢复，避免状态变化触发重渲染
@@ -362,7 +362,7 @@ const Home = (): JSX.Element => {
               {/* 加载更多指示器 */}
               {aiSearchHasMore && (
                 <div
-                  ref={loadMoreRef}
+                  ref={loadMoreRefCallback}
                   className="load-more-trigger col-span-full flex justify-center py-4"
                 >
                   {aiSearchLoadingMore ? (
@@ -401,7 +401,7 @@ const Home = (): JSX.Element => {
               {/* 加载更多指示器 */}
               {hasMore && albums && albums.length > 0 && (
                 <div
-                  ref={loadMoreRef}
+                  ref={loadMoreRefCallback}
                   className="load-more-trigger col-span-full flex justify-center py-4"
                 >
                   {isLoadingMore ? (
