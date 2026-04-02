@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from sqlalchemy import or_
+from typing import List, Optional, Dict, Any
 from pathlib import Path
 from datetime import datetime
 
 from app.database import get_db
-from app.models import Album, AlbumTag, Tag, User
+from app.models import Album, AlbumTag, Tag, User, Organization, Model
 from app.schemas import AlbumSummary, AlbumResponse, PagedResponse
 from app.services.archive import ArchiveService, FolderArchiveService
 from app.services.cover import CoverService
@@ -13,8 +14,60 @@ from app.services.cache import cache_service
 from app.config import settings
 from app.api.deps import DependsDB
 from app.api.endpoints.auth import get_current_user
+from app.utils import get_cover_url, paginate
 
 router = APIRouter(prefix="/api/albums", tags=["albums"])
+
+
+def _build_album_summary(album: Album) -> AlbumSummary:
+    """构建图集摘要对象"""
+    return AlbumSummary(
+        id=album.id,
+        title=album.title,
+        cover_url=get_cover_url(album),
+        image_count=album.image_count or 0,
+        tags=[t.name for t in album.tags],
+        description=album.description
+    )
+
+
+def _get_albums_by_tag_id(
+    db: Session,
+    tag_id: int,
+    tag_type: Optional[str] = None,
+    error_not_found: str = "标签不存在",
+    page: int = 1,
+    size: int = 20
+) -> PagedResponse:
+    """通用的按标签ID获取图集函数"""
+    # 验证标签是否存在
+    tag_query = db.query(Tag).filter(Tag.id == tag_id)
+    if tag_type:
+        tag_query = tag_query.filter(Tag.type == tag_type)
+    tag = tag_query.first()
+    
+    if not tag:
+        raise HTTPException(status_code=404, detail=error_not_found)
+    
+    # 通过标签筛选图集
+    query = db.query(Album).join(AlbumTag).filter(
+        AlbumTag.tag_id == tag_id,
+        Album.is_active == 1
+    ).order_by(Album.created_at.desc())
+    
+    # 分页
+    total, albums = paginate(query, page, size)
+    
+    # 构建响应
+    items = [_build_album_summary(album) for album in albums]
+    
+    return PagedResponse(
+        total=total,
+        page=page,
+        size=size,
+        items=items
+    )
+
 
 @router.get("/", response_model=PagedResponse)
 async def get_albums(
@@ -47,50 +100,16 @@ async def get_albums(
     if tag_type:
         query = query.join(Album.tags).filter(Tag.type == tag_type)
     
-    # 使用窗口函数获取总数（更高效）
-    from sqlalchemy import func
-    count_query = db.query(func.count(Album.id)).filter(Album.is_active == 1)
-    if search:
-        count_query = count_query.filter(
-            or_(
-                Album.title.contains(search),
-                Album.description.contains(search)
-            )
-        )
-    if tag_type:
-        count_query = count_query.join(Album.tags).filter(Tag.type == tag_type)
-    total = count_query.scalar()
-    
     # 分页查询（使用子查询加载标签，避免N+1问题）
     from sqlalchemy.orm import joinedload
-    albums = query.options(
+    query = query.options(
         joinedload(Album.tags)
-    ).order_by(Album.created_at.desc())\
-     .offset((page - 1) * size)\
-     .limit(size)\
-     .all()
+    ).order_by(Album.created_at.desc())
+    
+    total, albums = paginate(query, page, size)
     
     # 构建响应
-    items = []
-    for album in albums:
-        cover_url = None
-        
-        # 优先使用预提取的封面路径
-        if album.cover_path:
-            # 使用静态文件URL（基于CBZ文件名，WebP 封面）
-            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
-        elif album.cover_image:
-            # 降级：使用API接口（兼容旧数据）
-            cover_url = f"/albums/{album.id}/images/{album.cover_image}"
-        
-        items.append(AlbumSummary(
-            id=album.id,
-            title=album.title,
-            cover_url=cover_url,
-            image_count=album.image_count or 0,
-            tags=[t.name for t in album.tags],
-            description=album.description
-        ))
+    items = [_build_album_summary(album) for album in albums]
     
     return PagedResponse(
         total=total,
@@ -107,55 +126,18 @@ async def get_albums_by_organization(
     size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    """
-    根据组织（套图）筛选图集列表
-    """
-    from ...models import Organization
-    
+    """根据组织（套图）筛选图集列表"""
     # 验证组织是否存在
     org = db.query(Organization).filter(Organization.id == org_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="组织不存在")
     
-    # 通过组织关联的标签来筛选图集
-    query = db.query(Album).join(AlbumTag).filter(
-        AlbumTag.tag_id == org.tag_id,
-        Album.is_active == 1
-    )
-    
-    # 总数
-    total = query.count()
-    
-    # 分页查询
-    albums = query.order_by(Album.created_at.desc())\
-                 .offset((page - 1) * size)\
-                 .limit(size)\
-                 .all()
-    
-    # 构建响应
-    items = []
-    for album in albums:
-        cover_url = None
-        
-        if album.cover_path:
-            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
-        elif album.cover_image:
-            cover_url = f"/albums/{album.id}/images/{album.cover_image}"
-        
-        items.append(AlbumSummary(
-            id=album.id,
-            title=album.title,
-            cover_url=cover_url,
-            image_count=album.image_count or 0,
-            tags=[t.name for t in album.tags],
-            description=album.description
-        ))
-    
-    return PagedResponse(
-        total=total,
+    return _get_albums_by_tag_id(
+        db=db,
+        tag_id=org.tag_id,
+        error_not_found="组织不存在",
         page=page,
-        size=size,
-        items=items
+        size=size
     )
 
 
@@ -166,55 +148,18 @@ async def get_albums_by_model(
     size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    """
-    根据模特筛选图集列表
-    """
-    from ...models import Model
-    
+    """根据模特筛选图集列表"""
     # 验证模特是否存在
     model = db.query(Model).filter(Model.id == model_id).first()
     if not model:
         raise HTTPException(status_code=404, detail="模特不存在")
     
-    # 通过模特关联的标签来筛选图集
-    query = db.query(Album).join(AlbumTag).filter(
-        AlbumTag.tag_id == model.tag_id,
-        Album.is_active == 1
-    )
-    
-    # 总数
-    total = query.count()
-    
-    # 分页查询
-    albums = query.order_by(Album.created_at.desc())\
-                 .offset((page - 1) * size)\
-                 .limit(size)\
-                 .all()
-    
-    # 构建响应
-    items = []
-    for album in albums:
-        cover_url = None
-        
-        if album.cover_path:
-            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
-        elif album.cover_image:
-            cover_url = f"/albums/{album.id}/images/{album.cover_image}"
-        
-        items.append(AlbumSummary(
-            id=album.id,
-            title=album.title,
-            cover_url=cover_url,
-            image_count=album.image_count or 0,
-            tags=[t.name for t in album.tags],
-            description=album.description
-        ))
-    
-    return PagedResponse(
-        total=total,
+    return _get_albums_by_tag_id(
+        db=db,
+        tag_id=model.tag_id,
+        error_not_found="模特不存在",
         page=page,
-        size=size,
-        items=items
+        size=size
     )
 
 
@@ -225,55 +170,14 @@ async def get_albums_by_cosplayer(
     size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    """
-    根据 Cosplayer 筛选图集列表
-    """
-    from ...models import Tag
-    
-    # 验证标签是否存在且类型为 cosplayer
-    tag = db.query(Tag).filter(Tag.id == tag_id, Tag.type == 'cosplayer').first()
-    if not tag:
-        raise HTTPException(status_code=404, detail="Cosplayer 不存在")
-    
-    # 通过标签筛选图集
-    query = db.query(Album).join(AlbumTag).filter(
-        AlbumTag.tag_id == tag_id,
-        Album.is_active == 1
-    )
-    
-    # 总数
-    total = query.count()
-    
-    # 分页查询
-    albums = query.order_by(Album.created_at.desc())\
-                 .offset((page - 1) * size)\
-                 .limit(size)\
-                 .all()
-    
-    # 构建响应
-    items = []
-    for album in albums:
-        cover_url = None
-        
-        if album.cover_path:
-            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
-        elif album.cover_image:
-            cover_url = f"/albums/{album.id}/images/{album.cover_image}"
-        
-        items.append(AlbumSummary(
-            id=album.id,
-            title=album.title,
-            cover_url=cover_url,
-            image_count=album.image_count or 0,
-            tags=[t.name for t in album.tags],
-            description=album.description
-        ))
-    
-    return PagedResponse(
-        total=total,
+    """根据 Cosplayer 筛选图集列表"""
+    return _get_albums_by_tag_id(
+        db=db,
+        tag_id=tag_id,
+        tag_type='cosplayer',
+        error_not_found="Cosplayer 不存在",
         page=page,
-        size=size,
-        items=items
+        size=size
     )
 
 
@@ -284,55 +188,14 @@ async def get_albums_by_character(
     size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    """
-    根据角色筛选图集列表
-    """
-    from ...models import Tag
-    
-    # 验证标签是否存在且类型为 character
-    tag = db.query(Tag).filter(Tag.id == tag_id, Tag.type == 'character').first()
-    if not tag:
-        raise HTTPException(status_code=404, detail="角色不存在")
-    
-    # 通过标签筛选图集
-    query = db.query(Album).join(AlbumTag).filter(
-        AlbumTag.tag_id == tag_id,
-        Album.is_active == 1
-    )
-    
-    # 总数
-    total = query.count()
-    
-    # 分页查询
-    albums = query.order_by(Album.created_at.desc())\
-                 .offset((page - 1) * size)\
-                 .limit(size)\
-                 .all()
-    
-    # 构建响应
-    items = []
-    for album in albums:
-        cover_url = None
-        
-        if album.cover_path:
-            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
-        elif album.cover_image:
-            cover_url = f"/albums/{album.id}/images/{album.cover_image}"
-        
-        items.append(AlbumSummary(
-            id=album.id,
-            title=album.title,
-            cover_url=cover_url,
-            image_count=album.image_count or 0,
-            tags=[t.name for t in album.tags],
-            description=album.description
-        ))
-    
-    return PagedResponse(
-        total=total,
+    """根据角色筛选图集列表"""
+    return _get_albums_by_tag_id(
+        db=db,
+        tag_id=tag_id,
+        tag_type='character',
+        error_not_found="角色不存在",
         page=page,
-        size=size,
-        items=items
+        size=size
     )
 
 
@@ -343,55 +206,13 @@ async def get_albums_by_tag(
     size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    """
-    根据标签筛选图集列表
-    """
-    from ...models import Tag
-    
-    # 验证标签是否存在
-    tag = db.query(Tag).filter(Tag.id == tag_id).first()
-    if not tag:
-        raise HTTPException(status_code=404, detail="标签不存在")
-    
-    # 通过标签筛选图集
-    query = db.query(Album).join(AlbumTag).filter(
-        AlbumTag.tag_id == tag_id,
-        Album.is_active == 1
-    )
-    
-    # 总数
-    total = query.count()
-    
-    # 分页查询
-    albums = query.order_by(Album.created_at.desc())\
-                 .offset((page - 1) * size)\
-                 .limit(size)\
-                 .all()
-    
-    # 构建响应
-    items = []
-    for album in albums:
-        cover_url = None
-        
-        if album.cover_path:
-            cover_url = f"/covers/{Path(album.file_path).stem}.webp"
-        elif album.cover_image:
-            cover_url = f"/albums/{album.id}/images/{album.cover_image}"
-        
-        items.append(AlbumSummary(
-            id=album.id,
-            title=album.title,
-            cover_url=cover_url,
-            image_count=album.image_count or 0,
-            tags=[t.name for t in album.tags],
-            description=album.description
-        ))
-    
-    return PagedResponse(
-        total=total,
+    """根据标签筛选图集列表"""
+    return _get_albums_by_tag_id(
+        db=db,
+        tag_id=tag_id,
+        error_not_found="标签不存在",
         page=page,
-        size=size,
-        items=items
+        size=size
     )
 
 @router.get("/{album_id}", response_model=AlbumResponse)

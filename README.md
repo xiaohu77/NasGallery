@@ -293,6 +293,7 @@ docker run -d -p 8000:8000 -v ./data:/app/data nasgallery
 ## 项目demo
 
 https://nasgallery.xiaohu777.cn/
+用户名：admin 密码:admin123
 
 ## 📄 开源许可证
 
@@ -300,8 +301,17 @@ https://nasgallery.xiaohu777.cn/
 
 ---
 
+## 👨‍💻 关于作者
+
+| 信息 | 内容 |
+|------|------|
+| 作者 | 程序员零一 |
+| 公众号 | 程序员零一 |
+| GitHub | [@xiaohu77](https://github.com/xiaohu77) |
+| 微信 | wwg867376690 |
+
 <p align="center">
-  由 <a href="https://github.com/xiaohu77">xiaohu77</a> ❤️ 开发
+  由 <a href="https://github.com/xiaohu77">程序员零一</a> ❤️ 开发
 </p>
 
 ## ⭐ 星星趋势

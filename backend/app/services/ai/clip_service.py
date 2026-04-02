@@ -4,12 +4,15 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 from PIL import Image
 import io
+import threading
+import time
 
 logger = logging.getLogger(__name__)
 
 # 模型配置
 MODEL_DIR = Path(__file__).parent.parent.parent.parent / "data" / "ai_models" / "chinese-clip"
 EMBEDDING_DIM = 512  # CLIP 输出维度
+IDLE_TIMEOUT = 30 * 60  # 空闲超时时间（30分钟）
 
 
 class CLIPService:
@@ -23,6 +26,11 @@ class CLIPService:
         self.model_version = "clip-v1"
         self.use_single_model = False
         self.current_provider = None  # 当前使用的提供程序
+        
+        # 空闲超时相关
+        self.last_used_time = None
+        self._unload_timer = None
+        self._lock = threading.Lock()
     
     def get_available_providers(self) -> Dict[str, Any]:
         """获取可用的执行提供程序"""
@@ -196,6 +204,10 @@ class CLIPService:
             self.model_loaded = True
             self.current_provider = self.image_session.get_providers()[0]
             logger.info(f"CLIP 模型加载成功，使用: {self.image_session.get_providers()}")
+            
+            # 更新使用时间并启动空闲超时检测
+            self._update_last_used()
+            
             return True
             
         except ImportError as e:
@@ -204,6 +216,34 @@ class CLIPService:
         except Exception as e:
             logger.error(f"加载模型失败: {e}")
             return False
+    
+    def _update_last_used(self):
+        """更新最后使用时间并重置卸载定时器"""
+        with self._lock:
+            self.last_used_time = time.time()
+            self._reset_unload_timer()
+    
+    def _reset_unload_timer(self):
+        """重置卸载定时器"""
+        # 取消现有定时器
+        if self._unload_timer is not None:
+            self._unload_timer.cancel()
+        
+        # 启动新定时器
+        self._unload_timer = threading.Timer(IDLE_TIMEOUT, self._check_and_unload)
+        self._unload_timer.daemon = True
+        self._unload_timer.start()
+    
+    def _check_and_unload(self):
+        """检查是否应该卸载模型"""
+        with self._lock:
+            if self.last_used_time is None:
+                return
+            
+            idle_time = time.time() - self.last_used_time
+            if idle_time >= IDLE_TIMEOUT and self.model_loaded:
+                logger.info(f"模型空闲超过 {IDLE_TIMEOUT // 60} 分钟，自动卸载")
+                self.unload_model()
     
     def _load_tokenizer(self):
         """加载 tokenizer"""
@@ -232,6 +272,9 @@ class CLIPService:
         if not self.model_loaded:
             logger.error("模型未加载")
             return None
+        
+        # 更新使用时间
+        self._update_last_used()
         
         try:
             # 预处理图片
@@ -288,6 +331,9 @@ class CLIPService:
         if not self.model_loaded:
             logger.error("模型未加载")
             return None
+        
+        # 更新使用时间
+        self._update_last_used()
         
         try:
             # Tokenize
@@ -361,6 +407,13 @@ class CLIPService:
     def unload_model(self) -> bool:
         """卸载模型释放内存"""
         try:
+            # 取消定时器
+            with self._lock:
+                if self._unload_timer is not None:
+                    self._unload_timer.cancel()
+                    self._unload_timer = None
+                self.last_used_time = None
+            
             self.image_session = None
             self.text_session = None
             self.tokenizer = None

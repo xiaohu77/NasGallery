@@ -94,14 +94,17 @@ class EmbeddingScanner:
         
         self.current_task_id = task_id
         
-        # 启动后台任务
-        asyncio.create_task(self._run_scan_task(task_id, db, use_gpu))
+        # 启动后台任务（使用新session避免请求结束后session被关闭）
+        asyncio.create_task(self._run_scan_task(task_id, use_gpu))
         
         logger.info(f"AI 扫描任务已启动: {task_id}")
         return task_id
     
-    async def _run_scan_task(self, task_id: str, db: Session, use_gpu: bool):
-        """执行扫描任务"""
+    async def _run_scan_task(self, task_id: str, use_gpu: bool):
+        """执行扫描任务（创建独立session）"""
+        from ...database import SessionLocal
+        
+        db = SessionLocal()
         try:
             # 更新任务状态
             task = db.query(AIScanTask).filter(AIScanTask.task_id == task_id).first()
@@ -134,46 +137,60 @@ class EmbeddingScanner:
             failed = 0
             
             for album in albums:
+                album_id = album.id
+                album_title = album.title
+                album_file_path = album.file_path
                 try:
-                    # 检查是否暂停
                     await self._check_pause()
                     
-                    # 检查是否已有向量
                     existing = db.query(AlbumEmbedding).filter(
-                        AlbumEmbedding.album_id == album.id
+                        AlbumEmbedding.album_id == album_id
                     ).first()
                     
                     if existing:
                         processed += 1
                         continue
                     
-                    # 获取封面图片
-                    cover_data = await self._get_cover_data(album)
+                    try:
+                        cover_data = await self._get_cover_data_by_path(album_id, album_file_path)
+                    except Exception as e:
+                        logger.warning(f"获取封面异常 {album_id} ({album_title}): {e}")
+                        failed += 1
+                        continue
+                    
                     if not cover_data:
-                        logger.warning(f"无法获取封面: {album.id}")
+                        logger.debug(f"跳过无封面图集: {album_id} ({album_title})")
                         failed += 1
                         continue
                     
-                    # 编码图片 - 使用线程池执行CPU密集型操作
-                    embedding = await asyncio.to_thread(clip_service.encode_image, cover_data)
+                    try:
+                        embedding = await asyncio.to_thread(clip_service.encode_image, cover_data)
+                    except Exception as e:
+                        logger.warning(f"编码图片异常 {album_id} ({album_title}): {e}")
+                        failed += 1
+                        continue
+                        
                     if embedding is None:
-                        logger.warning(f"编码失败: {album.id}")
+                        logger.warning(f"编码失败: {album_id} ({album_title})")
                         failed += 1
                         continue
                     
-                    # 保存向量
-                    album_embedding = AlbumEmbedding(
-                        album_id=album.id,
-                        embedding=embedding.tobytes(),
-                        model_version=clip_service.model_version,
-                        created_at=datetime.utcnow()
-                    )
-                    db.add(album_embedding)
-                    db.commit()
+                    try:
+                        album_embedding = AlbumEmbedding(
+                            album_id=album_id,
+                            embedding=embedding.tobytes(),
+                            model_version=clip_service.model_version,
+                            created_at=datetime.utcnow()
+                        )
+                        db.add(album_embedding)
+                        db.commit()
+                        processed += 1
+                    except Exception as e:
+                        logger.warning(f"保存向量失败 {album_id}: {e}")
+                        failed += 1
+                        db.rollback()
+                        continue
                     
-                    processed += 1
-                    
-                    # 更新进度
                     progress = int((processed + failed) / total * 100)
                     await self._notify_progress(task_id, {
                         'task_id': task_id,
@@ -185,16 +202,14 @@ class EmbeddingScanner:
                         'message': f'已处理 {processed}/{total}'
                     })
                     
-                    # 更新任务进度
                     task.processed_albums = processed
                     task.failed_albums = failed
                     db.commit()
                     
-                    # 每处理完一个图片后让出CPU控制权，避免CPU满载
                     await asyncio.sleep(0)
                     
                 except Exception as e:
-                    logger.error(f"处理图集失败 {album.id}: {e}")
+                    logger.error(f"处理图集失败 {album_id}: {e}")
                     failed += 1
                     db.rollback()
                     await asyncio.sleep(0)
@@ -239,18 +254,23 @@ class EmbeddingScanner:
         finally:
             self.current_task_id = None
             self.unregister_progress_callback(task_id)
+            db.close()
     
     async def _get_cover_data(self, album: Album) -> Optional[bytes]:
-        """获取图集封面数据"""
+        """获取图集封面数据（保留兼容性）"""
+        return await self._get_cover_data_by_path(album.id, album.file_path)
+    
+    async def _get_cover_data_by_path(self, album_id: int, file_path: str) -> Optional[bytes]:
+        """根据路径获取图集封面数据"""
         try:
             from ...services.cover import CoverService
             from ...config import settings
             
-            if not album.file_path:
+            if not file_path:
                 return None
             
             cover_service = CoverService(settings.COVERS_DIR)
-            album_path = Path(album.file_path)
+            album_path = Path(file_path)
             cover_path = cover_service.get_cover_path_by_cbz(album_path)
             
             if cover_path and cover_path.exists():

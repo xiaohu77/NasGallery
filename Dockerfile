@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/requirements.txt ./
 COPY backend/app ./app
 COPY backend/run.py ./
-COPY backend/.env.example ./
+COPY .env.example ./
 
 # 创建虚拟环境并安装依赖
 RUN python -m venv /opt/venv && \

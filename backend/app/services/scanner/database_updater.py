@@ -3,10 +3,50 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
+import re
 
 from ...models import Album, Tag, Organization, Model, AlbumTag
 
 logger = logging.getLogger(__name__)
+
+
+def sanitize_filename(name: str) -> str:
+    """
+    规范化文件名，移除或替换特殊字符
+    
+    Args:
+        name: 原始文件名
+    
+    Returns:
+        规范化后的文件名
+    """
+    # 替换常见的特殊字符
+    replacements = {
+        '/': '_',
+        '\\': '_',
+        ':': '_',
+        '*': '_',
+        '?': '_',
+        '"': '_',
+        '<': '_',
+        '>': '_',
+        '|': '_',
+        '\n': '_',
+        '\r': '_',
+        '\t': '_',
+    }
+    
+    result = name
+    for old, new in replacements.items():
+        result = result.replace(old, new)
+    
+    # 移除连续的下划线
+    result = re.sub(r'_+', '_', result)
+    
+    # 移除首尾的空格和下划线
+    result = result.strip(' _')
+    
+    return result
 
 
 class DatabaseUpdater:
@@ -117,19 +157,27 @@ class DatabaseUpdater:
             new_tag_ids = {t.id for t in new_tags}
             existing_tag_ids = set(existing_tags.keys())
             
-            # 删除不存在的关联
+            # 删除不存在的关联（先减计数）
             to_remove = existing_tag_ids - new_tag_ids
             if to_remove:
+                # 先减少被移除标签的计数
+                for tag_id in to_remove:
+                    tag = existing_tags.get(tag_id)
+                    if tag and tag.album_count > 0:
+                        tag.album_count -= 1
+                
                 self.db.query(AlbumTag).filter(
                     AlbumTag.album_id == album.id,
                     AlbumTag.tag_id.in_(to_remove)
                 ).delete(synchronize_session=False)
                 logger.debug(f"移除标签关联: {album.id} - {len(to_remove)}个")
             
-            # 添加新的关联
+            # 添加新的关联（后加计数）
             to_add = new_tag_ids - existing_tag_ids
-            for tag_id in to_add:
-                self.db.add(AlbumTag(album_id=album.id, tag_id=tag_id))
+            for tag in new_tags:
+                if tag.id in to_add:
+                    self.db.add(AlbumTag(album_id=album.id, tag_id=tag.id))
+                    tag.album_count += 1
             if to_add:
                 logger.debug(f"添加标签关联: {album.id} - {len(to_add)}个")
                 
@@ -157,7 +205,7 @@ class DatabaseUpdater:
                 file_stat = album_path.stat()
                 file_size = file_stat.st_size
                 file_name = album_path.name
-                album_title = album_path.stem
+                album_title = sanitize_filename(album_path.stem)  # 规范化标题
             else:
                 # 文件夹图集：计算文件夹中所有图片的总大小
                 file_size = 0
@@ -166,11 +214,13 @@ class DatabaseUpdater:
                     if item.is_file() and item.suffix.lower() in image_extensions:
                         file_size += item.stat().st_size
                 file_name = album_path.name
-                album_title = album_path.name
+                album_title = sanitize_filename(album_path.name)  # 规范化标题
             
             # 使用传入的描述或默认标题
-            album_title = album_title
-            album_description = description
+            if description:
+                album_description = description
+            else:
+                album_description = None
             
             # 检查是否已存在
             album = self.db.query(Album).filter(

@@ -146,6 +146,23 @@ class CoverService:
         """检查封面是否存在（基于CBZ文件名）"""
         return self.get_cover_path_by_cbz(cbz_path).exists()
     
+    def get_or_create_cover(self, album_path: Path, cover_filename: str = "cover.jpg", album_id: int = None) -> Optional[Path]:
+        """
+        获取或创建封面（自动判断是CBZ还是文件夹）
+        
+        Args:
+            album_path: 图集路径（CBZ文件或文件夹）
+            cover_filename: 封面文件名（默认 cover.jpg）
+            album_id: 图集ID（用于日志）
+            
+        Returns:
+            封面路径，失败返回 None
+        """
+        if album_path.is_file():
+            return self.extract_cover_to_folder(album_path, cover_filename, album_id)
+        else:
+            return self.extract_cover_from_folder(album_path, cover_filename, album_id)
+    
     def cleanup_orphaned_covers(self, valid_album_paths: set):
         """
         清理已删除图集的封面（支持CBZ和文件夹图集）

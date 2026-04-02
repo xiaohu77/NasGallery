@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { PWAService } from '../services/pwaService'
 import { aiService, AIStatus, ScanTaskStatus as AIScanTaskStatus } from '../services/aiService'
 import type { ScanStats, OrphanStats, ScanTaskStatus } from '../types/album'
@@ -122,8 +122,58 @@ const StatValue = ({ value, label }: { value: number | string, label: string }) 
   </div>
 )
 
+// 骨架屏组件
+const SettingsSkeleton = (): JSX.Element => (
+  <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
+    <div className="max-w-xl mx-auto px-4 pt-6 pb-8">
+      {/* 标题骨架 */}
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded-lg w-24 mb-2"></div>
+        <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-lg w-48 mb-8"></div>
+      </div>
+
+      {/* 统计卡片骨架 */}
+      <div className="animate-pulse backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 rounded-3xl p-5 mb-6 space-y-3">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="flex items-center justify-between">
+            <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded-lg w-16"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-lg w-12"></div>
+          </div>
+        ))}
+      </div>
+
+      {/* 设置列表骨架 */}
+      <div className="animate-pulse backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 rounded-3xl px-5 divide-y divide-gray-200/50 dark:divide-gray-700/50">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex items-center justify-between py-4">
+            <div className="flex-1">
+              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-lg w-24 mb-1"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded-lg w-32"></div>
+            </div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded-full w-20"></div>
+          </div>
+        ))}
+      </div>
+
+      {/* AI设置列表骨架 */}
+      <div className="animate-pulse backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 rounded-3xl px-5 divide-y divide-gray-200/50 dark:divide-gray-700/50 mt-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center justify-between py-4">
+            <div className="flex-1">
+              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-lg w-28 mb-1"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded-lg w-40"></div>
+            </div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded-full w-20"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)
+
 const Settings = (): JSX.Element => {
   const [loading, setLoading] = useState<string | null>(null)
+  const [dataLoading, setDataLoading] = useState(true)
   const [scanStats, setScanStats] = useState<ScanStats | null>(null)
   const [orphanStats, setOrphanStats] = useState<OrphanStats | null>(null)
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -145,11 +195,30 @@ const Settings = (): JSX.Element => {
     new_albums: number
     updated_albums: number
   } | null>(null)
+  
+  // EventSource 引用管理（防止内存泄漏）
+  const scanEventSourceRef = useRef<EventSource | null>(null)
+  
+  // 安全关闭 EventSource
+  const closeScanEventSource = useCallback(() => {
+    if (scanEventSourceRef.current) {
+      scanEventSourceRef.current.close()
+      scanEventSourceRef.current = null
+    }
+  }, [])
+  
+  // 组件卸载时清理 EventSource
+  useEffect(() => {
+    return () => {
+      closeScanEventSource()
+    }
+  }, [closeScanEventSource])
 
   // 加载时自动获取统计数据
   useEffect(() => {
     const loadStats = async () => {
       try {
+        setDataLoading(true)
         const [scan, orphan] = await Promise.all([
           pwaService.getScanStats(),
           pwaService.getOrphanStats()
@@ -158,6 +227,8 @@ const Settings = (): JSX.Element => {
         setOrphanStats(orphan)
       } catch (e) {
         console.error('加载统计数据失败:', e)
+      } finally {
+        setDataLoading(false)
       }
     }
     loadStats()
@@ -165,9 +236,14 @@ const Settings = (): JSX.Element => {
 
   // 检查是否有正在运行的扫描任务
   useEffect(() => {
+    let isMounted = true
+    
     const checkRunningScan = async () => {
       try {
         const status = await pwaService.getScanStatus()
+        
+        if (!isMounted) return
+        
         if (status.is_running) {
           // 有正在运行的扫描任务，连接 SSE 获取进度
           setScanProgress({ status: 'running', total: 0, processed: 0, progress: 0, new_albums: 0, updated_albums: 0 })
@@ -177,12 +253,11 @@ const Settings = (): JSX.Element => {
             ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
             : window.location.origin
           
-          // 使用最新的任务ID
-          const taskId = status.running_task
-          
           // 如果有最新任务信息，更新状态
           if (status.latest_task) {
             const latestTask = status.latest_task
+            if (!isMounted) return
+            
             setScanProgress({
               status: latestTask.status === 'running' ? 'running' : latestTask.status === 'completed' ? 'completed' : 'failed',
               total: latestTask.total || 0,
@@ -199,9 +274,18 @@ const Settings = (): JSX.Element => {
             }
           }
           
+          // 关闭可能存在的旧连接
+          closeScanEventSource()
+          
           const eventSource = new EventSource(`${API_BASE}/api/scan/progress`)
+          scanEventSourceRef.current = eventSource
           
           eventSource.onmessage = (event) => {
+            if (!isMounted) {
+              eventSource.close()
+              return
+            }
+            
             try {
               const data = JSON.parse(event.data)
               
@@ -226,7 +310,7 @@ const Settings = (): JSX.Element => {
                   new_albums: data.new_albums || 0,
                   updated_albums: data.updated_albums || 0
                 })
-                eventSource.close()
+                closeScanEventSource()
                 setLoading(null)
                 
                 // 重新加载统计数据
@@ -234,8 +318,10 @@ const Settings = (): JSX.Element => {
                   pwaService.getScanStats(),
                   pwaService.getOrphanStats()
                 ]).then(([scan, orphan]) => {
-                  setScanStats(scan)
-                  setOrphanStats(orphan)
+                  if (isMounted) {
+                    setScanStats(scan)
+                    setOrphanStats(orphan)
+                  }
                 })
               } else if (data.status === 'failed') {
                 setScanProgress({
@@ -246,13 +332,13 @@ const Settings = (): JSX.Element => {
                   new_albums: 0,
                   updated_albums: 0
                 })
-                eventSource.close()
+                closeScanEventSource()
                 setLoading(null)
               } else if (data.status === 'no_task') {
                 // 没有正在进行的任务
                 setScanProgress(null)
                 setLoading(null)
-                eventSource.close()
+                closeScanEventSource()
               }
             } catch (e) {
               console.error('解析进度数据失败:', e)
@@ -261,9 +347,11 @@ const Settings = (): JSX.Element => {
           
           eventSource.onerror = () => {
             console.error('SSE 连接错误')
-            eventSource.close()
-            setLoading(null)
-            setScanProgress(null)
+            closeScanEventSource()
+            if (isMounted) {
+              setLoading(null)
+              setScanProgress(null)
+            }
           }
         }
       } catch (e) {
@@ -271,7 +359,13 @@ const Settings = (): JSX.Element => {
       }
     }
     checkRunningScan()
-  }, [pwaService])
+    
+    // Cleanup: 组件卸载或依赖变化时关闭连接
+    return () => {
+      isMounted = false
+      closeScanEventSource()
+    }
+  }, [pwaService, closeScanEventSource])
 
   // 加载 AI 状态
   useEffect(() => {
@@ -299,6 +393,9 @@ const Settings = (): JSX.Element => {
   }
 
   const handleScan = useCallback(async () => {
+    // 先关闭可能存在的旧连接
+    closeScanEventSource()
+    
     setLoading('scan')
     setScanProgress({ status: 'running', total: 0, processed: 0, progress: 0, new_albums: 0, updated_albums: 0 })
     
@@ -314,6 +411,7 @@ const Settings = (): JSX.Element => {
           : window.location.origin
         
         const eventSource = new EventSource(`${API_BASE}/api/scan/progress`)
+        scanEventSourceRef.current = eventSource
         
         eventSource.onmessage = (event) => {
           try {
@@ -341,7 +439,7 @@ const Settings = (): JSX.Element => {
                 updated_albums: data.updated_albums || 0
               })
               showToast(`扫描完成: 新增 ${data.new_albums}, 更新 ${data.updated_albums}`, 'success')
-              eventSource.close()
+              closeScanEventSource()
               setLoading(null)
               
               // 重新加载统计数据
@@ -362,7 +460,7 @@ const Settings = (): JSX.Element => {
                 updated_albums: 0
               })
               showToast(`扫描失败: ${data.error || '未知错误'}`, 'error')
-              eventSource.close()
+              closeScanEventSource()
               setLoading(null)
             }
           } catch (e) {
@@ -372,7 +470,7 @@ const Settings = (): JSX.Element => {
         
         eventSource.onerror = () => {
           console.error('SSE 连接错误')
-          eventSource.close()
+          closeScanEventSource()
           setLoading(null)
         }
       } else {
@@ -385,7 +483,7 @@ const Settings = (): JSX.Element => {
       setLoading(null)
       setScanProgress(null)
     }
-  }, [pwaService])
+  }, [pwaService, closeScanEventSource])
 
   const handleCleanupDeleted = useCallback(() => {
     setConfirmDialog({
@@ -423,6 +521,30 @@ const Settings = (): JSX.Element => {
         }
       }
     })
+  }, [pwaService])
+
+  const handleFixCovers = useCallback(async () => {
+    setLoading('fixCovers')
+    try {
+      const result = await pwaService.fixMissingCovers()
+      if (result.success) {
+        const reasonText = result.reasons 
+          ? Object.entries(result.reasons).map(([k, v]) => `${k}: ${v}`).join(', ')
+          : ''
+        showToast(
+          result.count === 0 
+            ? '没有需要修复的封面' 
+            : `已启动修复任务，共 ${result.count} 个图集${reasonText ? ` (${reasonText})` : ''}`,
+          result.count === 0 ? 'info' : 'success'
+        )
+      } else {
+        showToast(result.message, 'error')
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '修复失败', 'error')
+    } finally {
+      setLoading(null)
+    }
   }, [pwaService])
 
   const handleAiScan = useCallback(async () => {
@@ -475,6 +597,11 @@ const Settings = (): JSX.Element => {
       setLoading(null)
     }
   }, [selectedProvider])
+
+  // 数据加载时显示骨架屏
+  if (dataLoading) {
+    return <SettingsSkeleton />
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
@@ -609,6 +736,13 @@ const Settings = (): JSX.Element => {
             <ActionButton onClick={handleCleanupOrphans} loading={loading === 'cleanupOrphans'} variant="danger">
               <TrashIcon className="w-3.5 h-3.5" />
               清理
+            </ActionButton>
+          </SettingRow>
+
+          <SettingRow label="修复封面" description="修复缺失或不匹配的封面文件">
+            <ActionButton onClick={handleFixCovers} loading={loading === 'fixCovers'}>
+              <RefreshIcon className="w-3.5 h-3.5" />
+              修复
             </ActionButton>
           </SettingRow>
 

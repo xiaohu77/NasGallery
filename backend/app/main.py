@@ -90,12 +90,8 @@ async def startup_event():
     print(f"缓存目录: {settings.CACHE_DIR}")
     print(f"缓存服务已启动，定时清理任务运行中...")
     
-    # 自动加载 CLIP 模型（如果存在则常驻内存）
-    from app.services.ai import clip_service
-    if clip_service.load_model():
-        print(f"CLIP 模型已加载: {clip_service.get_model_info()}")
-    else:
-        print("CLIP 模型未找到，AI 搜索功能不可用")
+    # AI 模型按需加载（不再启动时自动加载）
+    print("AI 模型将按需加载（首次使用时自动加载）")
 
 
 async def _init_or_update_admin_user():

@@ -135,4 +135,8 @@ export class PWAService {
   async cleanupOrphans(): Promise<{ success: boolean; message: string }> {
     return apiClient.post('/api/scan/cleanup/orphans');
   }
+
+  async fixMissingCovers(): Promise<{ success: boolean; message: string; count?: number; task_id?: string; reasons?: Record<string, number> }> {
+    return apiClient.post('/api/scan/fix-covers');
+  }
 }

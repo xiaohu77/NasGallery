@@ -138,6 +138,21 @@ const Home = (): JSX.Element => {
     saveScrollPosition(target.scrollTop);
   }, [saveScrollPosition])
 
+  // 保存 AI 搜索状态到 sessionStorage
+  const saveAiSearchStateToStorage = useCallback((results: AISearchResult[], page: number, hasMore: boolean, searchQuery: string) => {
+    try {
+      sessionStorage.setItem('ai_search_state', JSON.stringify({
+        results,
+        page,
+        hasMore,
+        query: searchQuery,
+        timestamp: Date.now()
+      }))
+    } catch (e) {
+      console.warn('保存 AI 搜索状态失败:', e)
+    }
+  }, [])
+
   // 加载更多 AI 搜索结果
   const loadMoreAiResults = useCallback(async () => {
     if (!aiSearchHasMore || aiSearchLoadingMore || !currentAiQuery) return
@@ -146,15 +161,18 @@ const Home = (): JSX.Element => {
     try {
       const nextPage = aiSearchPage + 1
       const response = await aiService.search(currentAiQuery, 20, nextPage)
-      setAiSearchResults(prev => [...prev, ...response.results])
+      const newResults = [...aiSearchResults, ...response.results]
+      setAiSearchResults(newResults)
       setAiSearchHasMore(response.has_more)
       setAiSearchPage(nextPage)
+      // 保存更新后的状态
+      saveAiSearchStateToStorage(newResults, nextPage, response.has_more, currentAiQuery)
     } catch (err) {
       console.error('加载更多失败:', err)
     } finally {
       setAiSearchLoadingMore(false)
     }
-  }, [aiSearchHasMore, aiSearchLoadingMore, currentAiQuery, aiSearchPage])
+  }, [aiSearchHasMore, aiSearchLoadingMore, currentAiQuery, aiSearchPage, aiSearchResults, saveAiSearchStateToStorage])
 
   // 判断当前是否是AI搜索模式
   const isAiSearch = mode === 'ai' && query
@@ -200,6 +218,7 @@ const Home = (): JSX.Element => {
 
   // 滚动位置恢复 - 使用 ref 直接恢复，避免状态变化触发重渲染
   const hasRestoredScroll = useRef(false)
+  const hasRestoredAiSearch = useRef(false)
   const restoreScrollRef = useCallback((node: HTMLDivElement | null) => {
     if (node && scrollPosition > 0 && !hasRestoredScroll.current) {
       hasRestoredScroll.current = true
@@ -211,9 +230,54 @@ const Home = (): JSX.Element => {
     mainRef.current = node
   }, [scrollPosition])
 
+  // 保存 AI 搜索状态到 sessionStorage
+  const saveAiSearchState = useCallback((results: AISearchResult[], page: number, hasMore: boolean, searchQuery: string) => {
+    try {
+      sessionStorage.setItem('ai_search_state', JSON.stringify({
+        results,
+        page,
+        hasMore,
+        query: searchQuery,
+        timestamp: Date.now()
+      }))
+    } catch (e) {
+      console.warn('保存 AI 搜索状态失败:', e)
+    }
+  }, [])
+
+  // 恢复 AI 搜索状态从 sessionStorage
+  const restoreAiSearchState = useCallback((searchQuery: string): boolean => {
+    try {
+      const saved = sessionStorage.getItem('ai_search_state')
+      if (saved) {
+        const state = JSON.parse(saved)
+        // 检查是否是同一个查询且未过期（30分钟内）
+        if (state.query === searchQuery && (Date.now() - state.timestamp) < 30 * 60 * 1000) {
+          setAiSearchResults(state.results)
+          setAiSearchPage(state.page)
+          setAiSearchHasMore(state.hasMore)
+          setCurrentAiQuery(state.query)
+          setAiSearchLoading(false)
+          return true
+        }
+      }
+    } catch (e) {
+      console.warn('恢复 AI 搜索状态失败:', e)
+    }
+    return false
+  }, [])
+
   // AI 搜索处理
   useEffect(() => {
     if (mode === 'ai' && query) {
+      // 先尝试恢复缓存的状态
+      if (!hasRestoredAiSearch.current) {
+        hasRestoredAiSearch.current = true
+        if (restoreAiSearchState(query)) {
+          return
+        }
+      }
+      
       const performAiSearch = async () => {
         setAiSearchLoading(true)
         setAiSearchError(null)
@@ -227,6 +291,8 @@ const Home = (): JSX.Element => {
           setAiSearchResults(response.results)
           setAiSearchHasMore(response.has_more)
           setAiSearchPage(1)
+          // 保存搜索结果
+          saveAiSearchStateToStorage(response.results, 1, response.has_more, query)
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : 'AI 搜索失败'
           setAiSearchError(errorMessage)
@@ -243,8 +309,9 @@ const Home = (): JSX.Element => {
       setAiSearchHasMore(false)
       setAiSearchPage(1)
       setCurrentAiQuery('')
+      hasRestoredAiSearch.current = false
     }
-  }, [mode, query])
+  }, [mode, query, restoreAiSearchState, saveAiSearchStateToStorage])
 
   // 重试加载
   const handleRetry = () => {
@@ -311,7 +378,7 @@ const Home = (): JSX.Element => {
 
   return (
     <div className="py-4 px-4 sm:px-6 lg:px-8 hide-scrollbar" ref={restoreScrollRef} onScroll={handleScroll} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-      {/* AI 搜索模式提示 */}
+      {/* 搜索模式提示 */}
       {mode === 'ai' && query && (
         <div className="mb-4 text-center">
           <span className="inline-flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-3 py-1 rounded-full">
@@ -319,6 +386,18 @@ const Home = (): JSX.Element => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
             AI 搜索: "{query}"
+          </span>
+        </div>
+      )}
+      
+      {/* 普通搜索提示 */}
+      {mode !== 'ai' && query && (
+        <div className="mb-4 text-center">
+          <span className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            搜索: "{query}"
           </span>
         </div>
       )}
@@ -394,12 +473,12 @@ const Home = (): JSX.Element => {
             Array.from({ length: 8 }).map((_, index) => (
               <SkeletonCard key={index} />
             ))
-          ) : (
+          ) : albums && albums.length > 0 ? (
             <>
-              {albums && albums.map((album, index) => renderAlbumCard(album, undefined, index))}
+              {albums.map((album, index) => renderAlbumCard(album, undefined, index))}
 
               {/* 加载更多指示器 */}
-              {hasMore && albums && albums.length > 0 && (
+              {hasMore && (
                 <div
                   ref={loadMoreRefCallback}
                   className="load-more-trigger col-span-full flex justify-center py-4"
@@ -416,12 +495,16 @@ const Home = (): JSX.Element => {
               )}
 
               {/* 无更多数据提示 */}
-              {!hasMore && albums && albums.length > 0 && (
+              {!hasMore && (
                 <div className="col-span-full text-center py-4 text-sm text-slate-400">
                   已加载全部图集
                 </div>
               )}
             </>
+          ) : (
+            <div className="col-span-full text-center py-8 text-slate-500">
+              {query ? `没有找到"${query}"相关的图集` : '暂无图集'}
+            </div>
           )
         )}
       </div>

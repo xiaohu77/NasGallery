@@ -1,5 +1,4 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .config import settings
 
@@ -28,8 +27,8 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-# 声明基类
-Base = declarative_base()
+# 从 models.base 导入 Base，保持一致
+from .models.base import Base
 
 # 依赖注入函数
 def get_db():
