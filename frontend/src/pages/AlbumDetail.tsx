@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 
 // Hook 导入
 import { useAlbumData } from '../hooks/useAlbumData'
 import { useLazyImages } from '../hooks/useLazyImages'
+import { useUserData } from '../hooks/useUserData'
 
 // 组件导入
 import AlbumHeader from '../components/Album/AlbumHeader'
@@ -12,11 +13,14 @@ import Lightbox from '../components/Lightbox/Lightbox'
 
 // 服务导入
 import { PWAService } from '../services/pwaService'
+import { useUser } from '../contexts/UserContext'
 
 const AlbumDetail = (): JSX.Element => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [pwaService] = useState(() => new PWAService())
+  const { isAuthenticated } = useUser()
+  const { recordView } = useUserData()
   
   // 数据管理
   const { album, loading: albumLoading, error: albumError } = useAlbumData(id, pwaService)
@@ -24,6 +28,13 @@ const AlbumDetail = (): JSX.Element => {
   
   const loading = albumLoading || imagesLoading
   const error = albumError || imagesError
+
+  // 记录浏览历史
+  useEffect(() => {
+    if (id && isAuthenticated) {
+      recordView(id)
+    }
+  }, [id, isAuthenticated, recordView])
 
   // 灯箱状态
   const [lightboxOpen, setLightboxOpen] = useState(false)

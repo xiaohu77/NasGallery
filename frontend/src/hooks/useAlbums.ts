@@ -85,9 +85,10 @@ export const useAlbums = (
   categoryType: 'org' | 'model' | 'cosplayer' | 'character' | 'tag' | null,
   categoryId: number | null,
   pwaService: PWAService,
-  searchQuery?: string
+  searchQuery?: string,
+  sort?: string
 ) => {
-  const stateKey = CacheKeys.state.albums(categoryType, categoryId, searchQuery);
+  const stateKey = CacheKeys.state.albums(categoryType, categoryId, searchQuery, sort);
   const [state, dispatch] = useReducer(albumsReducer, initialState);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -110,27 +111,29 @@ export const useAlbums = (
       description: album.description || '暂无描述',
       coverImage,
       imageCount: album.image_count,
+      viewCount: album.view_count,
     };
   }, []);
 
   const fetchData = useCallback(async (pageNum: number) => {
     try {
       let response;
+      const sortParam = sort || undefined
       if (categoryType && !categoryId) {
-        response = await pwaService.getAlbums(pageNum, 20, categoryType);
+        response = await pwaService.getAlbums(pageNum, 20, categoryType, sortParam);
       } else if (categoryType && categoryId) {
         response = await pwaService.getAlbumsByCategory(categoryType, categoryId, pageNum, 20);
       } else if (searchQuery) {
         response = await pwaService.searchAlbums(searchQuery, pageNum, 20);
       } else {
-        response = await pwaService.getAlbums(pageNum, 20);
+        response = await pwaService.getAlbums(pageNum, 20, undefined, sortParam);
       }
       return response;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '加载失败';
       throw new Error(errorMessage);
     }
-  }, [categoryType, categoryId, searchQuery, pwaService]);
+  }, [categoryType, categoryId, searchQuery, pwaService, sort]);
 
   // 保存滚动位置（只更新缓存，不触发重渲染）
   const saveScrollPosition = useCallback((position: number) => {
@@ -161,14 +164,15 @@ export const useAlbums = (
     dispatch({ type: 'REFRESH' });
     try {
       let response;
+      const sortParam = sort || undefined
       if (categoryType && !categoryId) {
-        response = await pwaService.refreshAlbums(1, 20, categoryType);
+        response = await pwaService.refreshAlbums(1, 20, categoryType, sortParam);
       } else if (categoryType && categoryId) {
         response = await pwaService.refreshAlbumsByCategory(categoryType, categoryId, 1, 20);
       } else if (searchQuery) {
         response = await pwaService.searchAlbums(searchQuery, 1, 20);
       } else {
-        response = await pwaService.refreshAlbums(1, 20);
+        response = await pwaService.refreshAlbums(1, 20, undefined, sortParam);
       }
       const newAlbums = response.items.map(transformAlbum);
       const hasMoreData = response.page * response.size < response.total;
@@ -179,7 +183,7 @@ export const useAlbums = (
       dispatch({ type: 'LOAD_ERROR', payload: errorMessage });
       console.error('刷新图集失败:', err);
     }
-  }, [categoryType, categoryId, searchQuery, pwaService, transformAlbum, saveState]);
+  }, [categoryType, categoryId, searchQuery, pwaService, transformAlbum, saveState, sort]);
 
   // 当分类变化时，从缓存恢复或重新加载
   useEffect(() => {

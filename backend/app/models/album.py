@@ -38,6 +38,7 @@ class Album(Base):
     cover_image = Column(String)
     cover_path = Column(String)
     file_size = Column(BigInteger)
+    view_count = Column(Integer, default=0)  # 浏览次数
     album_type = Column(String, default='cbz')  # 'cbz' 或 'folder'
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

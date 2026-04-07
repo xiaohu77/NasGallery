@@ -83,15 +83,17 @@ export class PWAService {
     return apiClient.get(endpoint, { page: page.toString(), size: size.toString() });
   }
 
-  async getAlbums(page: number = 1, size: number = 20, tagType?: string): Promise<any> {
+  async getAlbums(page: number = 1, size: number = 20, tagType?: string, sort?: string): Promise<any> {
     const params: Record<string, string> = { page: page.toString(), size: size.toString() };
     if (tagType) params.tag_type = tagType;
+    if (sort) params.sort = sort;
     return apiClient.get('/api/albums/', params);
   }
 
-  async refreshAlbums(page: number = 1, size: number = 20, tagType?: string): Promise<any> {
+  async refreshAlbums(page: number = 1, size: number = 20, tagType?: string, sort?: string): Promise<any> {
     const params: Record<string, string> = { page: page.toString(), size: size.toString() };
     if (tagType) params.tag_type = tagType;
+    if (sort) params.sort = sort;
     return apiClient.get('/api/albums/', params);
   }
 

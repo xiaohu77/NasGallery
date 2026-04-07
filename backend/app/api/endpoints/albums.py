@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.database import get_db
 from app.models import Album, AlbumTag, Tag, User, Organization, Model
@@ -27,7 +27,8 @@ def _build_album_summary(album: Album) -> AlbumSummary:
         cover_url=get_cover_url(album),
         image_count=album.image_count or 0,
         tags=[t.name for t in album.tags],
-        description=album.description
+        description=album.description,
+        view_count=album.view_count or 0
     )
 
 
@@ -75,6 +76,7 @@ async def get_albums(
     size: int = Query(20, ge=1, le=100),
     search: Optional[str] = Query(None),
     tag_type: Optional[str] = Query(None),
+    sort: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -84,6 +86,7 @@ async def get_albums(
     - size: 每页数量（最大100）
     - search: 搜索关键词（匹配标题和描述）
     - tag_type: 按标签类型筛选
+    - sort: 排序方式 - recent(近期新增), popular(浏览最多), favorites(用户收藏), history(历史浏览)
     """
     query = db.query(Album).filter(Album.is_active == 1)
     
@@ -100,11 +103,21 @@ async def get_albums(
     if tag_type:
         query = query.join(Album.tags).filter(Tag.type == tag_type)
     
+    # 排序方式
+    if sort == 'popular':
+        # 浏览最多 - 按浏览量降序
+        query = query.order_by(Album.view_count.desc().nullslast(), Album.created_at.desc())
+    elif sort == 'recent':
+        # 近期新增 - 按更新时间降序（近一周内更新的）
+        one_week_ago = datetime.utcnow() - timedelta(days=7)
+        query = query.filter(Album.updated_at >= one_week_ago).order_by(Album.updated_at.desc())
+    else:
+        # 默认按创建时间降序
+        query = query.order_by(Album.created_at.desc())
+    
     # 分页查询（使用子查询加载标签，避免N+1问题）
     from sqlalchemy.orm import joinedload
-    query = query.options(
-        joinedload(Album.tags)
-    ).order_by(Album.created_at.desc())
+    query = query.options(joinedload(Album.tags))
     
     total, albums = paginate(query, page, size)
     

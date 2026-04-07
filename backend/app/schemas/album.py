@@ -31,6 +31,7 @@ class AlbumSummary(BaseModel):
     image_count: int
     tags: List[str] = []
     description: Optional[str] = None
+    view_count: int = 0
     
     class Config:
         from_attributes = True
@@ -42,6 +43,7 @@ class AlbumResponse(AlbumBase):
     image_count: Optional[int]
     cover_image: Optional[str]
     file_size: Optional[int]
+    view_count: int = 0
     created_at: datetime
     updated_at: datetime
     tags: List[TagResponse] = []

@@ -43,7 +43,8 @@ export const useAlbumData = (id: string | undefined, pwaService: PWAService) => 
             ? `${API_BASE}/api/albums/${albumDetail.id}/images/${albumDetail.cover_image}`
             : '',
           imageCount: albumDetail.image_count || 0,
-          tags: tags
+          tags: tags,
+          viewCount: albumDetail.view_count || 0
         };
 
         setAlbum(transformedAlbum);

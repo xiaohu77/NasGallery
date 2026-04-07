@@ -72,6 +72,7 @@ export interface AlbumSummary {
   image_count: number
   tags: string[]
   description?: string
+  view_count?: number
 }
 
 export interface PagedResponse {
@@ -88,6 +89,7 @@ export interface AlbumCard {
   description: string
   coverImage: string
   imageCount: number
+  viewCount?: number
 }
 
 // 前端使用的图集详情数据类型
@@ -98,6 +100,7 @@ export interface Album {
   coverImage: string
   imageCount: number
   tags: Tag[]
+  viewCount?: number
 }
 
 // 后端图集详情响应类型

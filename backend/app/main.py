@@ -8,7 +8,7 @@ from typing import Optional
 
 from app.config import settings
 from app.database import init_db, SessionLocal
-from app.api.endpoints import albums, categories, scan, auth, static, ai
+from app.api.endpoints import albums, categories, scan, auth, static, ai, user
 from app.models import User
 from passlib.context import CryptContext
 
@@ -43,6 +43,7 @@ app.include_router(scan.router)
 app.include_router(auth.router)
 app.include_router(static.router)
 app.include_router(ai.router)
+app.include_router(user.router)
 
 # 挂载静态文件目录（前端构建产物）
 try:

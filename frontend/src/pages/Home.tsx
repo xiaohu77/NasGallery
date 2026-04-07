@@ -2,7 +2,9 @@ import { Link, useParams, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { PWAService } from '../services/pwaService'
 import { useAlbums } from '../hooks/useAlbums'
+import { useUserData } from '../hooks/useUserData'
 import { aiService, AISearchResult } from '../services/aiService'
+import { useUser } from '../contexts/UserContext'
 
 const API_BASE = import.meta.env.DEV
   ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
@@ -27,6 +29,7 @@ const Home = (): JSX.Element => {
   const location = useLocation()
   const navigate = useNavigate()
   const mainRef = useRef<HTMLDivElement>(null)
+  const { isAuthenticated } = useUser()
   
   const [pwaService] = useState(() => new PWAService())
   const [aiSearchResults, setAiSearchResults] = useState<AISearchResult[]>([])
@@ -36,6 +39,27 @@ const Home = (): JSX.Element => {
   const [aiSearchPage, setAiSearchPage] = useState(1)
   const [aiSearchLoadingMore, setAiSearchLoadingMore] = useState(false)
   const [currentAiQuery, setCurrentAiQuery] = useState('')
+  
+  // 获取排序参数
+  const sortParam = useCallback(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('sort')
+  }, [location.search])
+  
+  const currentSort = sortParam()
+  const isUserData = currentSort === 'favorites' || currentSort === 'history'
+  
+  // 用户数据 hook（收藏/历史）
+  const {
+    favorites,
+    history,
+    favoritesLoading,
+    historyLoading,
+    hasMoreFavorites,
+    hasMoreHistory,
+    loadMoreFavorites,
+    loadMoreHistory
+  } = useUserData()
   
   // 滑动切换分类
   const touchStartX = useRef(0)
@@ -92,6 +116,7 @@ const Home = (): JSX.Element => {
   
   const query = searchQuery()
   const mode = searchMode()
+  const sort = sortParam()
   
   // 从URL路径提取分类类型和ID
   const getCategoryInfo = useCallback(() => {
@@ -126,7 +151,7 @@ const Home = (): JSX.Element => {
     refresh,
     scrollPosition,
     saveScrollPosition
-  } = useAlbums(categoryType, categoryId, pwaService, query)
+  } = useAlbums(categoryType, categoryId, pwaService, query, sort)
 
   // 懒加载观察器
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -419,8 +444,64 @@ const Home = (): JSX.Element => {
 
       {/* 图集网格 */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {/* AI 搜索模式 */}
-        {mode === 'ai' && query ? (
+        {/* 用户收藏/历史模式 */}
+        {isUserData && isAuthenticated ? (
+          currentSort === 'favorites' ? (
+            favoritesLoading && favorites.length === 0 ? (
+              Array.from({ length: 8 }).map((_, index) => (
+                <SkeletonCard key={index} />
+              ))
+            ) : favorites.length > 0 ? (
+              <>
+                {favorites.map((album, index) => renderAlbumCard(album, undefined, index))}
+                {hasMoreFavorites && (
+                  <div
+                    ref={loadMoreRefCallback}
+                    className="load-more-trigger col-span-full flex justify-center py-4"
+                  >
+                    <span className="text-sm text-slate-400">下滑加载更多...</span>
+                  </div>
+                )}
+                {!hasMoreFavorites && favorites.length > 0 && (
+                  <div className="col-span-full text-center py-4 text-sm text-slate-400">
+                    已加载全部
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="col-span-full text-center py-8 text-slate-500">
+                暂无收藏
+              </div>
+            )
+          ) : (
+            historyLoading && history.length === 0 ? (
+              Array.from({ length: 8 }).map((_, index) => (
+                <SkeletonCard key={index} />
+              ))
+            ) : history.length > 0 ? (
+              <>
+                {history.map((album, index) => renderAlbumCard(album, undefined, index))}
+                {hasMoreHistory && (
+                  <div
+                    ref={loadMoreRefCallback}
+                    className="load-more-trigger col-span-full flex justify-center py-4"
+                  >
+                    <span className="text-sm text-slate-400">下滑加载更多...</span>
+                  </div>
+                )}
+                {!hasMoreHistory && history.length > 0 && (
+                  <div className="col-span-full text-center py-4 text-sm text-slate-400">
+                    已加载全部
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="col-span-full text-center py-8 text-slate-500">
+                暂无浏览历史
+              </div>
+            )
+          )
+        ) : mode === 'ai' && query ? (
           aiSearchLoading ? (
             Array.from({ length: 8 }).map((_, index) => (
               <SkeletonCard key={index} />
@@ -438,7 +519,6 @@ const Home = (): JSX.Element => {
                 return renderAlbumCard(album, result.similarity, index)
               })}
               
-              {/* 加载更多指示器 */}
               {aiSearchHasMore && (
                 <div
                   ref={loadMoreRefCallback}
@@ -455,7 +535,6 @@ const Home = (): JSX.Element => {
                 </div>
               )}
               
-              {/* 无更多数据提示 */}
               {!aiSearchHasMore && aiSearchResults.length > 0 && (
                 <div className="col-span-full text-center py-4 text-sm text-slate-400">
                   已加载全部图集
@@ -477,7 +556,6 @@ const Home = (): JSX.Element => {
             <>
               {albums.map((album, index) => renderAlbumCard(album, undefined, index))}
 
-              {/* 加载更多指示器 */}
               {hasMore && (
                 <div
                   ref={loadMoreRefCallback}
@@ -494,7 +572,6 @@ const Home = (): JSX.Element => {
                 </div>
               )}
 
-              {/* 无更多数据提示 */}
               {!hasMore && (
                 <div className="col-span-full text-center py-4 text-sm text-slate-400">
                   已加载全部图集

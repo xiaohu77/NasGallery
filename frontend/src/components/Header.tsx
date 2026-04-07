@@ -24,6 +24,8 @@ const mainTabs = [
 const allSubTabs = [
   { id: 'recent', label: '近期新增', sort: 'recent' },
   { id: 'popular', label: '浏览最多', sort: 'popular' },
+  { id: 'favorites', label: '我的收藏', sort: 'favorites', requiresAuth: true },
+  { id: 'history', label: '历史浏览', sort: 'history', requiresAuth: true },
 ]
 
 const Header = () => {
@@ -140,6 +142,16 @@ const Header = () => {
   }
 
   const handleSubTabClick = (subId: string, subName?: string) => {
+    // 收藏和历史浏览使用查询参数
+    if (subId === 'favorites' || subId === 'history') {
+      if (!isAuthenticated) {
+        navigate('/login')
+        return
+      }
+      navigate(`/?sort=${subId}`)
+      return
+    }
+    
     if (activeMainTab === 'all') {
       navigate(`/?sort=${subId}`)
     } else if (activeMainTab === 'org') {
@@ -291,21 +303,25 @@ const Header = () => {
       {showTabs && (
         <div className="flex items-center gap-4 px-4 sm:px-6 pb-1 overflow-x-auto hide-scrollbar border-b border-gray-200/30 dark:border-gray-700/30">
           {/* 所有图集的排序选项 */}
-          {activeMainTab === 'all' && allSubTabs.map((sub) => (
-            <button
-              key={sub.id}
-              onClick={() => handleSubTabClick(sub.sort)}
-              className={`
-                py-1 text-xs whitespace-nowrap transition-all
-                ${activeSubTab === sub.sort
-                  ? 'text-gray-900 dark:text-white'
-                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
-                }
-              `}
-            >
-              {sub.label}
-            </button>
-          ))}
+          {activeMainTab === 'all' && allSubTabs.map((sub) => {
+            // 未登录时隐藏需要认证的Tab
+            if (sub.requiresAuth && !isAuthenticated) return null
+            return (
+              <button
+                key={sub.id}
+                onClick={() => handleSubTabClick(sub.sort)}
+                className={`
+                  py-1 text-xs whitespace-nowrap transition-all
+                  ${activeSubTab === sub.sort
+                    ? 'text-gray-900 dark:text-white'
+                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
+                  }
+                `}
+              >
+                {sub.label}
+              </button>
+            )
+          })}
           
           {/* 刊物/人物/Cosplayer/角色的子分类 */}
           {(activeMainTab === 'org' || activeMainTab === 'model' || activeMainTab === 'cosplayer' || activeMainTab === 'character') && subCategories.map((sub) => (

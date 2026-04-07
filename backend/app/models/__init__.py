@@ -7,6 +7,7 @@ from .base import Base
 from .album import Album, AlbumTag
 from .tag import Tag, Organization, Model
 from .user import User
+from .user_extra import UserFavorite, UserHistory
 from .ai import AlbumEmbedding, AIScanTask
 from .task import ScanTask
 
@@ -18,6 +19,8 @@ __all__ = [
     'Organization',
     'Model',
     'User',
+    'UserFavorite',
+    'UserHistory',
     'AlbumEmbedding',
     'AIScanTask',
     'ScanTask',

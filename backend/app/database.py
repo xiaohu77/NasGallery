@@ -45,7 +45,7 @@ def init_db():
     """
     初始化数据库，创建所有表和索引
     """
-    from .models import Album, Tag, Organization, Model, AlbumTag, User, AlbumEmbedding, AIScanTask, ScanTask
+    from .models import Album, Tag, Organization, Model, AlbumTag, User, AlbumEmbedding, AIScanTask, ScanTask, UserFavorite, UserHistory
     Base.metadata.create_all(bind=engine)
     
     # 创建额外的索引（如果不存在）
@@ -59,6 +59,23 @@ def init_db():
         # AlbumTag 表索引
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_album_tags_album_id ON album_tags(album_id)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_album_tags_tag_id ON album_tags(tag_id)"))
+        
+        # UserFavorite 表索引
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_favorites_user_id ON user_favorites(user_id)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_favorites_album_id ON user_favorites(album_id)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_favorites_user_album ON user_favorites(user_id, album_id)"))
+        
+        # UserHistory 表索引
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_history_user_id ON user_history(user_id)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_history_album_id ON user_history(album_id)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_history_viewed_at ON user_history(viewed_at)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_history_user_viewed ON user_history(user_id, viewed_at)"))
+        
+        # 为 Album 添加 view_count 列（如果不存在）
+        try:
+            conn.execute(text("ALTER TABLE albums ADD COLUMN view_count INTEGER DEFAULT 0"))
+        except Exception:
+            pass  # 列可能已存在
         
         conn.commit()
     
