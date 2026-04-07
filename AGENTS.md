@@ -22,8 +22,19 @@ python run.py
 # 或
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-# 数据库初始化
+# 数据库初始化（开发模式 - 自动创建表）
 python -c "from app.database import init_db; init_db()"
+
+# Alembic 迁移（生产环境推荐）
+# 生成迁移
+alembic revision --autogenerate -m "描述"
+# 应用迁移
+alembic upgrade head
+# 回滚迁移
+alembic downgrade -1
+# 查看迁移状态
+alembic current
+alembic history
 
 # 扫描测试
 curl -X POST http://localhost:8000/scan/sync
