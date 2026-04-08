@@ -108,9 +108,8 @@ async def get_albums(
         # 浏览最多 - 按浏览量降序
         query = query.order_by(Album.view_count.desc().nullslast(), Album.created_at.desc())
     elif sort == 'recent':
-        # 近期新增 - 按更新时间降序（近一周内更新的）
-        one_week_ago = datetime.utcnow() - timedelta(days=7)
-        query = query.filter(Album.updated_at >= one_week_ago).order_by(Album.updated_at.desc())
+        # 近期新增 - 按入库时间降序
+        query = query.order_by(Album.created_at.desc())
     else:
         # 默认按创建时间降序
         query = query.order_by(Album.created_at.desc())

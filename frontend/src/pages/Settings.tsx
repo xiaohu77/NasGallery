@@ -485,35 +485,19 @@ const Settings = (): JSX.Element => {
     }
   }, [pwaService, closeScanEventSource])
 
-  const handleCleanupDeleted = useCallback(() => {
+  const handleCleanupData = useCallback(() => {
     setConfirmDialog({
-      title: '清理已删除图集',
-      message: '将清理 30 天前已删除的图集数据，此操作不可撤销。',
+      title: '清理数据库',
+      message: '将清理 30 天前已删除的图集数据 + 数据库中的孤立关联数据，此操作不可撤销。',
       onConfirm: async () => {
         setConfirmDialog(null)
-        setLoading('cleanupDeleted')
+        setLoading('cleanupData')
         try {
-          const result = await pwaService.cleanupDeletedAlbums(30)
-          showToast(result.message, 'success')
-        } catch (error) {
-          showToast(error instanceof Error ? error.message : '清理失败', 'error')
-        } finally {
-          setLoading(null)
-        }
-      }
-    })
-  }, [pwaService])
-
-  const handleCleanupOrphans = useCallback(() => {
-    setConfirmDialog({
-      title: '清理孤儿数据',
-      message: '将清理数据库中的孤立关联数据，此操作不可撤销。',
-      onConfirm: async () => {
-        setConfirmDialog(null)
-        setLoading('cleanupOrphans')
-        try {
-          const result = await pwaService.cleanupOrphans()
-          showToast(result.message, 'success')
+          const [deletedResult, orphanResult] = await Promise.all([
+            pwaService.cleanupDeletedAlbums(30),
+            pwaService.cleanupOrphans()
+          ])
+          showToast(`已清理: ${deletedResult.message}, ${orphanResult.message}`, 'success')
         } catch (error) {
           showToast(error instanceof Error ? error.message : '清理失败', 'error')
         } finally {
@@ -725,15 +709,8 @@ const Settings = (): JSX.Element => {
             </div>
           )}
 
-          <SettingRow label="清理已删除" description="30 天前已删除的图集数据">
-            <ActionButton onClick={handleCleanupDeleted} loading={loading === 'cleanupDeleted'} variant="danger">
-              <TrashIcon className="w-3.5 h-3.5" />
-              清理
-            </ActionButton>
-          </SettingRow>
-
-          <SettingRow label="清理孤儿数据" description="数据库中的孤立关联数据">
-            <ActionButton onClick={handleCleanupOrphans} loading={loading === 'cleanupOrphans'} variant="danger">
+          <SettingRow label="清理数据" description="清理已删除图集和孤立关联数据">
+            <ActionButton onClick={handleCleanupData} loading={loading === 'cleanupData'} variant="danger">
               <TrashIcon className="w-3.5 h-3.5" />
               清理
             </ActionButton>
