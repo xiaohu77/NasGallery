@@ -137,6 +137,19 @@ const Header = () => {
   }, [navigate])
 
   const handleMainTabClick = (tabId: string, path: string) => {
+    if (tabId !== 'all' && subCategories.length > 0) {
+      const firstSubCategory = subCategories[0]
+      if (tabId === 'org') {
+        navigate(`/org/${firstSubCategory.id}`)
+      } else if (tabId === 'model') {
+        navigate(`/model/${firstSubCategory.id}`)
+      } else if (tabId === 'cosplayer') {
+        navigate(`/cosplayer/${firstSubCategory.id}`)
+      } else if (tabId === 'character') {
+        navigate(`/character/${firstSubCategory.id}`)
+      }
+      return
+    }
     setActiveSubTab(null)
     navigate(path)
   }
