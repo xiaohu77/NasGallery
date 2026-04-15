@@ -25,17 +25,27 @@ class CLIPService:
         self.model_loaded = False
         self.model_version = "clip-v1"
         self.use_single_model = False
-        self.current_provider = None  # 当前使用的提供程序
+        self.current_provider = None
         
         # 空闲超时相关
         self.last_used_time = None
         self._unload_timer = None
         self._lock = threading.Lock()
+        
+        # 缓存 providers 信息，避免每次请求都调用 subprocess
+        self._providers_cache = None
+        self._providers_cache_time = 0
+        self._providers_cache_ttl = 60  # 缓存 60 秒
     
     def get_available_providers(self) -> Dict[str, Any]:
-        """获取可用的执行提供程序"""
+        """获取可用的执行提供程序（带缓存）"""
+        import time
         import onnxruntime as ort
-        import subprocess
+        
+        # 检查缓存
+        now = time.time()
+        if self._providers_cache and (now - self._providers_cache_time) < self._providers_cache_ttl:
+            return self._providers_cache
         
         available = ort.get_available_providers()
         
@@ -77,6 +87,10 @@ class CLIPService:
                 'display_name': 'DirectML GPU',
                 'description': 'Windows GPU 加速'
             })
+        
+        # 缓存结果
+        self._providers_cache = providers_info
+        self._providers_cache_time = now
         
         return providers_info
     

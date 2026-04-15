@@ -77,7 +77,7 @@ async def startup_event():
     ai_models_dir.mkdir(parents=True, exist_ok=True)
     
     # 初始化数据库
-    init_db()
+    _run_alembic_migration()
     
     # 初始化或更新管理员账户
     await _init_or_update_admin_user()
@@ -93,6 +93,27 @@ async def startup_event():
     
     # AI 模型按需加载（不再启动时自动加载）
     print("AI 模型将按需加载（首次使用时自动加载）")
+
+
+def _run_alembic_migration():
+    """自动运行 Alembic 数据库迁移"""
+    try:
+        from alembic import command
+        from alembic.config import Config
+        
+        # 加载 alembic.ini 配置
+        alembic_cfg = Config("alembic.ini")
+        
+        # 执行迁移（会自动检测并应用未执行的迁移）
+        command.upgrade(alembic_cfg, "head")
+        print("数据库迁移完成")
+        
+    except Exception as e:
+        # 迁移失败时回退到 init_db（兼容开发模式）
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Alembic 迁移失败，回退到 create_all: {e}")
+        init_db()
 
 
 async def _init_or_update_admin_user():
