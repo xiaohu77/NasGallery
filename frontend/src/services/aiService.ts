@@ -192,6 +192,21 @@ class AIService {
     }
     return response.json()
   }
+
+  /**
+   * 中止扫描任务
+   */
+  async cancelScan(taskId?: string): Promise<{ success: boolean; message: string }> {
+    const url = taskId 
+      ? `${this.baseUrl}/scan/cancel?task_id=${taskId}`
+      : `${this.baseUrl}/scan/cancel`
+    const response = await fetch(url, { method: 'POST' })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.detail || `HTTP ${response.status}`)
+    }
+    return response.json()
+  }
 }
 
 export const aiService = new AIService()

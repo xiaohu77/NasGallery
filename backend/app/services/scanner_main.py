@@ -415,3 +415,98 @@ def get_scan_stats(db: Session) -> Dict:
     from .scanner.scan_stats import ScanStats
     stats = ScanStats(db)
     return stats.get_scan_stats()
+
+
+import time
+import threading
+
+
+class ScheduledScanner:
+    """定时扫描任务管理器"""
+
+    def __init__(self):
+        self._running = False
+        self._thread = None
+
+    def start(self):
+        """启动定时扫描任务"""
+        if self._running:
+            logger.warning("定时扫描任务已在运行")
+            return
+
+        self._running = True
+        self._thread = threading.Thread(target=self._run_scheduler, daemon=True)
+        self._thread.start()
+        logger.info("定时扫描任务已启动（每天 04:00 执行）")
+
+    def stop(self):
+        """停止定时扫描任务"""
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=5)
+        logger.info("定时扫描任务已停止")
+
+    def _run_scheduler(self):
+        """运行调度器"""
+        while self._running:
+            try:
+                # 计算距离下次4点的时间
+                now = datetime.now()
+                next_run = now.replace(hour=4, minute=0, second=0, microsecond=0)
+                if now.hour >= 4:
+                    next_run += timedelta(days=1)
+                delay = (next_run - now).total_seconds()
+
+                logger.info(f"定时扫描: 下次执行时间 {next_run.strftime('%Y-%m-%d %H:%M:%S')}，距离 {delay/3600:.1f} 小时")
+                time.sleep(min(delay, 60))  # 每分钟检查一次
+
+                # 检查是否到达4点
+                now = datetime.now()
+                if now.hour == 4 and now.minute < 5:  # 4:00-4:04 期间执行
+                    self._execute_scheduled_scan()
+                    time.sleep(300)  # 执行后等待5分钟，避免重复执行
+
+            except Exception as e:
+                logger.error(f"定时扫描任务异常: {e}")
+                time.sleep(60)
+
+    def _execute_scheduled_scan(self):
+        """执行定时扫描任务"""
+        logger.info("=" * 50)
+        logger.info("定时扫描任务开始执行")
+        logger.info("=" * 50)
+
+        try:
+            # 1. 执行文件扫描
+            logger.info("步骤1: 执行文件扫描...")
+            from app.database import SessionLocal
+            db = SessionLocal()
+            try:
+                result = scan_albums(db)
+                new_albums = result.get('results', {}).get('new_albums', 0)
+                logger.info(f"文件扫描完成: 新增 {new_albums} 个图集")
+            finally:
+                db.close()
+
+            # 2. 如果有新增图集，执行AI扫描
+            if new_albums > 0:
+                logger.info(f"步骤2: 检测到 {new_albums} 个新增图集，执行AI扫描...")
+                try:
+                    from app.services.ai import embedding_scanner
+                    db = SessionLocal()
+                    task_id = embedding_scanner.start_scan(db, use_gpu=True)
+                    if task_id:
+                        logger.info(f"AI扫描任务已启动: {task_id}")
+                    else:
+                        logger.warning("AI扫描任务启动失败（可能有任务正在运行）")
+                    db.close()
+                except Exception as e:
+                    logger.error(f"AI扫描任务启动失败: {e}")
+            else:
+                logger.info("步骤2: 无新增图集，跳过AI扫描")
+
+            logger.info("定时扫描任务执行完成")
+            logger.info("=" * 50)
+
+        except Exception as e:
+            logger.error(f"定时扫描任务执行失败: {e}")

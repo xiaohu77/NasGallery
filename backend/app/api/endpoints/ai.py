@@ -5,9 +5,11 @@ from sqlalchemy.orm import Session
 from typing import Optional
 import json
 import asyncio
+from datetime import datetime
 
 from app.database import get_db
 from app.services.ai import embedding_scanner, clip_service
+from app.models import AIScanTask
 from app.models import User
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
@@ -213,3 +215,33 @@ async def resume_scan():
     """恢复扫描"""
     embedding_scanner.resume_scan()
     return {"success": True, "message": "扫描已恢复"}
+
+
+@router.post("/scan/cancel")
+async def cancel_scan(
+    task_id: Optional[str] = Query(None, description="任务ID"),
+    db: Session = Depends(get_db)
+):
+    """中止扫描任务"""
+    # 如果没有指定任务ID，则中止当前正在运行的任务
+    target_task = None
+    
+    if task_id:
+        target_task = db.query(AIScanTask).filter(AIScanTask.task_id == task_id).first()
+    else:
+        # 查找最新正在运行的任务
+        target_task = db.query(AIScanTask).filter(AIScanTask.status == 'running').first()
+    
+    if not target_task:
+        return {"success": False, "message": "没有正在运行的扫描任务"}
+    
+    # 更新任务状态为 failed
+    target_task.status = 'failed'
+    target_task.error_message = '用户手动中止'
+    target_task.completed_at = datetime.utcnow()
+    db.commit()
+    
+    # 清除内存中的当前任务ID
+    embedding_scanner.cancel_current_task()
+    
+    return {"success": True, "message": f"任务 {target_task.task_id} 已中止"}

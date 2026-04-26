@@ -38,6 +38,14 @@ class EmbeddingScanner:
         """恢复扫描"""
         self._is_paused = False
     
+    def cancel_current_task(self):
+        """取消当前正在运行的任务"""
+        logger.info(f"取消当前任务: {self.current_task_id}")
+        self.current_task_id = None
+        self._is_paused = False
+        # 清除所有回调
+        self._progress_callbacks.clear()
+    
     async def _check_pause(self):
         """检查是否暂停"""
         while self._is_paused:

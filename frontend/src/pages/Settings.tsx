@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { PWAService } from '../services/pwaService'
 import { aiService, AIStatus, ScanTaskStatus as AIScanTaskStatus } from '../services/aiService'
 import type { ScanStats, OrphanStats, ScanTaskStatus } from '../types/album'
+import CloseIcon from '../components/icons/CloseIcon'
 
 // 获取当前使用的 GPU 名称
 const getCurrentGpuName = (aiStatus: AIStatus | null): string => {
@@ -565,6 +566,27 @@ const Settings = (): JSX.Element => {
     }
   }, [aiStatus])
 
+  const handleCancelAiScan = useCallback(async () => {
+    setLoading('cancelAiScan')
+    try {
+      const result = await aiService.cancelScan()
+      if (result.success) {
+        showToast('扫描已中止', 'success')
+        // 清除卡住的状态
+        setAiTaskStatus(null)
+        // 重新加载状态
+        const status = await aiService.getStatus()
+        setAiStatus(status)
+      } else {
+        showToast(result.message, 'error')
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '中止失败', 'error')
+    } finally {
+      setLoading(null)
+    }
+  }, [])
+
   const handleReloadModel = useCallback(async () => {
     setLoading('reloadModel')
     try {
@@ -735,14 +757,26 @@ const Settings = (): JSX.Element => {
               : '未找到模型文件，请先下载模型'
             }
           >
-            <ActionButton 
-              onClick={handleAiScan} 
-              loading={loading === 'aiScan' || aiTaskStatus?.status === 'running'}
-              disabled={!aiStatus?.has_model_files}
-            >
-              <RefreshIcon className="w-3.5 h-3.5" />
-              {aiTaskStatus?.status === 'running' ? '扫描中' : '扫描'}
-            </ActionButton>
+            {/* 有正在运行的任务时显示中止按钮，否则显示扫描按钮 */}
+            {aiTaskStatus?.status === 'running' ? (
+              <ActionButton 
+                onClick={handleCancelAiScan} 
+                loading={loading === 'cancelAiScan'}
+                className="bg-red-500 hover:bg-red-600 text-white"
+              >
+                <CloseIcon className="w-3.5 h-3.5" />
+                中止
+              </ActionButton>
+            ) : (
+              <ActionButton 
+                onClick={handleAiScan} 
+                loading={loading === 'aiScan'}
+                disabled={!aiStatus?.has_model_files}
+              >
+                <RefreshIcon className="w-3.5 h-3.5" />
+                扫描
+              </ActionButton>
+            )}
           </SettingRow>
 
           {aiTaskStatus && aiTaskStatus.status === 'running' && (

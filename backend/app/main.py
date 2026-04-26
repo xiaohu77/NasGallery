@@ -94,6 +94,12 @@ async def startup_event():
     # AI 模型按需加载（不再启动时自动加载）
     print("AI 模型将按需加载（首次使用时自动加载）")
 
+    # 启动定时扫描任务（每天凌晨4点）
+    from app.services.scanner_main import ScheduledScanner
+    scheduled_scanner = ScheduledScanner()
+    scheduled_scanner.start()
+    print("定时扫描任务已启动（每天 04:00 执行）")
+
 
 def _run_alembic_migration():
     """自动运行 Alembic 数据库迁移"""

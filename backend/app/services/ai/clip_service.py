@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 # 模型配置
 MODEL_DIR = Path(__file__).parent.parent.parent.parent / "data" / "ai_models" / "chinese-clip"
 EMBEDDING_DIM = 512  # CLIP 输出维度
-IDLE_TIMEOUT = 30 * 60  # 空闲超时时间（30分钟）
+IDLE_TIMEOUT = 30 * 60  # 30分钟超时后重启进程释放内存
 
 
 class CLIPService:
@@ -30,7 +30,7 @@ class CLIPService:
         # 空闲超时相关
         self.last_used_time = None
         self._unload_timer = None
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         
         # 缓存 providers 信息，避免每次请求都调用 subprocess
         self._providers_cache = None
@@ -134,16 +134,8 @@ class CLIPService:
         return None
     
     def load_model(self, use_gpu: bool = True, provider_name: Optional[str] = None) -> bool:
-        """
-        加载 CLIP 模型
-        
-        Args:
-            use_gpu: 是否使用 GPU
-            provider_name: 指定使用的提供程序名称，None 则自动选择
-            
-        Returns:
-            是否加载成功
-        """
+        print(f"[AI模型] load_model() called, use_gpu={use_gpu}")
+        logger.info("[AI模型] load_model() 被调用")
         try:
             import onnxruntime as ort
             
@@ -244,20 +236,25 @@ class CLIPService:
             self._unload_timer.cancel()
         
         # 启动新定时器
+        print(f"[AI模型] 创建定时器: {IDLE_TIMEOUT}秒")
         self._unload_timer = threading.Timer(IDLE_TIMEOUT, self._check_and_unload)
         self._unload_timer.daemon = True
         self._unload_timer.start()
     
     def _check_and_unload(self):
-        """检查是否应该卸载模型"""
+        print("[AI模型] _check_and_unload() 被调用")
         with self._lock:
             if self.last_used_time is None:
+                print("[AI模型] last_used_time=None，跳过")
                 return
-            
-            idle_time = time.time() - self.last_used_time
-            if idle_time >= IDLE_TIMEOUT and self.model_loaded:
-                logger.info(f"模型空闲超过 {IDLE_TIMEOUT // 60} 分钟，自动卸载")
+            idle = time.time() - self.last_used_time
+            print(f"[AI模型] 检查: idle={idle:.0f}s, timeout={IDLE_TIMEOUT}, loaded={self.model_loaded}")
+            if idle >= IDLE_TIMEOUT and self.model_loaded:
+                print("[AI模型] 开始卸载模型...")
                 self.unload_model()
+                print("[AI模型] 模型已卸载，准备重启进程释放内存...")
+                import os
+                os._exit(0)  # 退出进程让容器自动重启
     
     def _load_tokenizer(self):
         """加载 tokenizer"""
@@ -419,25 +416,40 @@ class CLIPService:
         return has_separate or has_single
     
     def unload_model(self) -> bool:
-        """卸载模型释放内存"""
+        print("[AI模型] unload_model() 被调用")
         try:
-            # 取消定时器
             with self._lock:
                 if self._unload_timer is not None:
+                    print("[AI模型] 取消定时器")
                     self._unload_timer.cancel()
                     self._unload_timer = None
                 self.last_used_time = None
-            
+
+            print("[AI模型] 清理 image_session...")
+            if self.image_session is not None:
+                del self.image_session
             self.image_session = None
+
+            print("[AI模型] 清理 text_session...")
+            if self.text_session is not None:
+                del self.text_session
             self.text_session = None
+
+            print("[AI模型] 清理 tokenizer...")
+            if self.tokenizer is not None:
+                del self.tokenizer
             self.tokenizer = None
+
             self.model_loaded = False
             self.current_provider = None
-            
-            # 强制垃圾回收
+
             import gc
+            print("[AI模型] 执行 gc.collect()...")
             gc.collect()
-            
+            gc.collect()
+            gc.collect()
+
+            print("[AI模型] 卸载完成，内存应已释放")
             logger.info("CLIP 模型已卸载，内存已释放")
             return True
         except Exception as e:
