@@ -31,7 +31,7 @@ jobs:
       - name: Run backend tests
         run: |
           cd backend
-          pip install pytest pytest-asyncio httpx --index-url https://pypi.org/simple/
+          pip install pytest pytest-asyncio httpx --upgrade --index-url https://pypi.org/simple/
           pytest tests/ -v --tb=short
 
   frontend-ci:
