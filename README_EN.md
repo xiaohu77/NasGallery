@@ -1,52 +1,58 @@
 # NasGallery
 
-<p align="center">
-  <a href="https://github.com/xiaohu77/NasGallery">
-    <img src="https://img.shields.io/github/stars/xiaohu77/NasGallery?style=social" alt="GitHub stars">
-    <img src="https://img.shields.io/github/forks/xiaohu77/NasGallery?style=social" alt="GitHub forks">
-    <img src="https://img.shields.io/github/license/xiaohu77/NasGallery" alt="License">
-  </a>
-  <br>
-  <a href="https://github.com/xiaohu77/NasGallery/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/xiaohu77/NasGallery/ci.yml" alt="Build status">
-  </a>
-  <img src="https://img.shields.io/github/languages/top/xiaohu77/NasGallery" alt="Language">
-  <img src="https://img.shields.io/github/repo-size/xiaohu77/NasGallery" alt="Repo size">
-</p>
-
 > A modern web application for managing and viewing CBZ image archives with a beautiful gallery interface.
 
-[English](./README_EN.md) | 简体中文
+## ✨ Why NasGallery?
 
-## ✨ Features
+Most image management solutions (like Google Photos, Nextcloud Gallery) are designed for general-purpose photos and don't suit the niche of managing anime/fan-created image archives. NasGallery is purpose-built for CBZ-format doujinshi collections, offering differentiated capabilities:
+
+| Feature | NasGallery | Google Photos | Nextcloud Gallery | Calibre-Web |
+|---------|-----------|--------------|-------------------|-------------|
+| CBZ comic format support | ✅ Native parsing | ❌ | ❌ | ❌ |
+| Doujinshi metadata (org/model/cosplayer/character) | ✅ Auto-extract | ❌ | ❌ | ❌ |
+| CLIP Chinese semantic search | ✅ Chinese-optimized | ❌ | ❌ | ❌ |
+| Scheduled auto-scan + AI vectorization | ✅ | ❌ | ❌ | ❌ |
+| PWA offline access | ✅ | ❌ | ✅ | ❌ |
+| Multi-level cache + thumbnails | ✅ | ✅ | ✅ | ❌ |
+| Docker one-click deployment | ✅ | ❌ | ✅ | ✅ |
+| Auto memory release (AI model) | ✅ Process restart on timeout | N/A | N/A | N/A |
+
+### Key Advantages
+
+**1. Purpose-built for Doujinshi Collections**
+- CBZ comic format with embedded `metadata.json` auto-parsing
+- Classification dimensions: Organization (ORG), Model, Cosplayer, Character
+- Adapted to anime fandom naming conventions (`OrgName__ModelName__XXP.cbz`)
+
+**2. Chinese Semantic AI Search**
+- Chinese-CLIP powered natural language image search
+- Describe scenes in plain Chinese: "穿红色连衣裙的女孩", "海边风景"
+- Intel/NVIDIA GPU acceleration with OpenVINO and CUDA support
+
+**3. Lazy Loading + On-demand Loading**
+- Masonry grid with infinite scroll, handles large datasets smoothly
+- Thumbnail pre-generation + multi-level caching
+- AI model loaded on-demand, auto-unload after 30 min idle, process restart frees memory
+
+**4. Out-of-the-box Deployment**
+- Docker one-click deployment, no manual configuration
+- Scheduled tasks auto-execute (daily 4:00 AM scan + AI vectorization)
+- Alembic database migration runs automatically on startup
+
+## ✨ Core Features
 
 - 📚 **CBZ Archive Management** - Full support for CBZ (Comic Book ZIP) image archives
 - 🖼️ **Beautiful Gallery** - Responsive masonry grid layout with lightbox viewing
 - 🔍 **Smart Search** - Search albums by title, organization, model, or tags
-- 🏷️ **Organization System** - Three-level classification: Organization / Model / Tags
-- ⚡ **Fast Performance** - Multi-level caching system with thumbnail generation
+- 🤖 **AI Semantic Search** - CLIP-based natural language image search
+- 🏷️ **Organization System** - Primary classification: All Albums / Organization / Model / Cosplayer / Character
+- ⚡ **High Performance** - Multi-level caching with thumbnail generation
 - 📱 **PWA Support** - Installable web app with offline capabilities
 - 🌙 **Dark Mode** - Built-in theme switching support
 - 🔐 **Secure Authentication** - JWT-based authentication with role management
-- 🚀 **Auto Scanning** - Automatic file system scanning for new content
-
-## 🛠️ Tech Stack
-
-### Backend
-| Technology | Description |
-|------------|-------------|
-| [FastAPI](https://fastapi.tiangolo.com/) | Modern Python web framework |
-| [SQLAlchemy](https://www.sqlalchemy.org/) | SQL toolkit and ORM |
-| [Pydantic](https://docs.pydantic.dev/) | Data validation |
-| [Pillow](https://python-pillow.org/) | Image processing |
-
-### Frontend
-| Technology | Description |
-|------------|-------------|
-| [React](https://react.dev/) | UI library |
-| [TypeScript](https://www.typescriptlang.org/) | Type safety |
-| [Vite](https://vitejs.dev/) | Build tool |
-| [TailwindCSS](https://tailwindcss.com/) | Utility-first CSS |
+- 🚀 **Auto Scanning** - Async scanning tasks with pause/resume/cancel support
+- 🎮 **GPU Acceleration** - Intel GPU (OpenVINO) and NVIDIA GPU (CUDA) support
+- ⏰ **Scheduled Scanning** - Daily auto-scan at 4:00 AM (file scan + AI vectorization)
 
 ## 🚀 Quick Start
 
@@ -61,7 +67,7 @@
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/xiaohu77/NasGallery.git
+git clone https://github.com/wwgxx/NasGallery.git
 cd NasGallery
 ```
 
@@ -78,9 +84,6 @@ venv\Scripts\activate     # Windows
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Initialize database
-python -c "from app.database import init_db; init_db()"
 
 # (Optional) Configure environment
 cp ../.env.example .env
@@ -124,11 +127,11 @@ The app will be available at `http://localhost:5173`
 
 ### Initial Setup
 
-1. The default admin credentials are:
+1. Default admin credentials:
    - Username: `admin`
    - Password: `admin123`
 
-2. Log in and navigate to the scan page to index your CBZ files
+2. Log in and navigate to Settings → Scan to index your CBZ files
 
 3. Place your CBZ files in the `data/images` directory
 
@@ -144,6 +147,8 @@ Each CBZ archive can contain a `metadata.json` file to define album metadata.
 {
   "institution": "Organization Name",
   "model": "Model Name",
+  "cosplayer": "Cosplayer Name",
+  "character": "Character Name",
   "title": "Album Title",
   "description": "Album Description"
 }
@@ -153,8 +158,10 @@ Each CBZ archive can contain a `metadata.json` file to define album metadata.
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `institution` | Yes | Organization / Institution name |
-| `model` | Yes | Model name |
+| `institution` | No | Organization / Institution name |
+| `model` | No | Model name |
+| `cosplayer` | No | Cosplayer name |
+| `character` | No | Character name |
 | `title` | Yes | Album title |
 | `description` | No | Album description |
 
@@ -165,7 +172,7 @@ If no `metadata.json` exists inside the CBZ file, the system will try to parse m
 **Naming Format:**
 
 ```
-Organization__OtherInfo__ModelName__PagesP.jpg
+Organization__OtherInfo__ModelName__PagesP.cbz
 ```
 
 **Example:**
@@ -182,9 +189,24 @@ Parsed result:
 
 ```
 data/images/
-├── Uniqlo__John__75P.cbz
-├── Uniqlo__John__80P.cbz
-└── Organization__Model__100P/
+├── org/                    # Organized by organization
+│   ├── Uniqlo/
+│   │   ├── Uniqlo__John__75P.cbz
+│   │   └── Uniqlo__Jane__80P.cbz
+│   └── ...
+├── model/                  # Organized by model
+│   ├── John/
+│   │   └── John__PhotoSet__100P.cbz
+│   └── ...
+├── cosplayer/              # Organized by cosplayer
+│   ├── cosplayer_name/
+│   │   └── cosplay_album.cbz
+│   └── ...
+├── character/              # Organized by character
+│   ├── character_name/
+│   │   └── character_album.cbz
+│   └── ...
+└── Organization__Model__100P/    # Folder albums
     ├── metadata.json
     ├── 001.jpg
     ├── 002.jpg
@@ -193,69 +215,88 @@ data/images/
 
 ### Auto Classification
 
-The system automatically extracts the following tags from metadata:
+The system automatically extracts the following tags from metadata and directory structure:
 
-- **Organization (org)**: Extracted from `institution` field
-- **Model (model)**: Extracted from `model` field
+- **Organization (org)**: From `institution` field or `org/` directory
+- **Model (model)**: From `model` field or `model/` directory
+- **Cosplayer (cosplayer)**: From `cosplayer` field or `cosplayer/` directory
+- **Character (character)**: From `character` field or `character/` directory
 - **Tags**: Matched keywords from `title` and `description`
 
 Supported tag keywords: landscape, portrait, anime, CG, impasto, oil painting, comic, watercolor, Chinese painting
 
-## 📁 Project Structure
-
-```
-NasGallery/
-├── backend/
-│   ├── app/
-│   │   ├── api/endpoints/     # API routes
-│   │   ├── services/          # Business logic
-│   │   ├── models.py          # Database models
-│   │   ├── schemas.py         # Pydantic schemas
-│   │   ├── database.py        # Database config
-│   │   └── main.py            # App entry point
-│   ├── data/                  # Data directory
-│   │   ├── images/            # CBZ files
-│   │   └── tmp/               # Cache files
-│   └── requirements.txt
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/        # React components
-│   │   ├── pages/            # Page components
-│   │   ├── hooks/            # Custom hooks
-│   │   ├── contexts/         # React Context
-│   │   ├── services/         # API services
-│   │   └── types/            # TypeScript types
-│   ├── public/
-│   └── package.json
-│
-├── .env                       # Environment config
-├── docker-compose.yml         # Docker Compose
-├── Dockerfile                 # Docker image
-└── README.md
-```
-
-## 📡 API Documentation
-
-Once the server is running, visit:
-
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-## 🔧 Configuration
-
-### Environment Variables
+## 🔧 Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `PROJECT_NAME` | Project name | `GirlAtlas` |
+| `PROJECT_NAME` | Project name | `NasGallery` |
 | `DATABASE_URL` | Database URL | `sqlite:///./data/nasgallery.db` |
 | `SECRET_KEY` | JWT secret key | Auto-generated |
 | `ADMIN_USERNAME` | Admin username | `admin` |
 | `ADMIN_PASSWORD` | Admin password | `admin123` |
 | `IMAGES_DIR` | CBZ files directory | `./data/images` |
 | `VITE_API_BASE` | API base URL | `http://localhost:8000` |
-| `TAG_KEYWORDS` | Tag keywords (comma separated) |landscape, portrait, anime, CG, impasto, oil painting, comic, watercolor, Chinese painting |
+| `TAG_KEYWORDS` | Tag keywords (comma separated) | landscape, portrait, anime, CG, impasto, oil painting, comic, watercolor, Chinese painting |
+
+## 🔄 Database Migration
+
+The project uses Alembic for database version management.
+
+```bash
+cd backend
+
+# Generate migration
+alembic revision --autogenerate -m "description"
+
+# Apply migration
+alembic upgrade head
+
+# Rollback migration
+alembic downgrade -1
+
+# View migration status
+alembic current
+alembic history
+```
+
+**First deployment:** Migrations run automatically on app startup, no manual action needed.
+
+## 🤖 AI Search Setup (Optional)
+
+AI search requires additional setup:
+
+1. **Download Chinese-CLIP Model**
+
+```bash
+# Create model directory
+mkdir -p backend/data/ai_models/chinese-clip
+
+# Download base model (~754MB)
+cd backend/data/ai_models/chinese-clip
+wget https://huggingface.co/Xenova/chinese-clip-vit-base-patch16/resolve/main/onnx/model.onnx -O model.onnx
+
+# Download tokenizer
+mkdir -p tokenizer
+wget https://huggingface.co/bert-base-chinese/resolve/main/vocab.txt -O tokenizer/vocab.txt
+```
+
+2. **Install GPU Acceleration (Optional)**
+
+```bash
+# Intel GPU (OpenVINO) - Recommended for integrated graphics
+pip install onnxruntime-openvino
+
+# NVIDIA GPU (CUDA) - Requires NVIDIA GPU
+pip install onnxruntime-gpu
+```
+
+3. **Initialize AI Vectors**
+
+Navigate to Settings → AI Search → Click "Scan"
+
+4. **Using AI Search**
+
+Click the 💡 icon in the search box to switch to AI search mode and enter natural language descriptions
 
 ## 🐳 Docker Deployment
 
@@ -268,15 +309,10 @@ docker build -t nasgallery .
 docker run -d -p 8000:8000 -v ./data:/app/data nasgallery
 ```
 
-## 🤝 Contributing
+## 📁 Live Demo
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+https://nasgallery.xiaohu777.cn/
+Username: admin Password: admin123
 
 ## 📄 License
 
@@ -284,8 +320,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
+## 👨‍💻 About Author
+
+| Info | Content |
+|------|---------|
+| Author | 程序员零一 |
+| GitHub | [@xiaohu77](https://github.com/xiaohu77) |
+
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/xiaohu77">xiaohu77</a>
+  Made with ❤️ by <a href="https://github.com/xiaohu77">程序员零一</a>
 </p>
 
 ## ⭐ Star History

@@ -1,24 +1,44 @@
 # NasGallery
 
-<p align="center">
-  <a href="https://github.com/xiaohu77/NasGallery">
-    <img src="https://img.shields.io/github/stars/xiaohu77/NasGallery?style=social" alt="GitHub stars">
-    <img src="https://img.shields.io/github/forks/xiaohu77/NasGallery?style=social" alt="GitHub forks">
-    <img src="https://img.shields.io/github/license/xiaohu77/NasGallery" alt="License">
-  </a>
-  <br>
-  <a href="https://github.com/xiaohu77/NasGallery/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/xiaohu77/NasGallery/ci.yml" alt="Build status">
-  </a>
-  <img src="https://img.shields.io/github/languages/top/xiaohu77/NasGallery" alt="Language">
-  <img src="https://img.shields.io/github/repo-size/xiaohu77/NasGallery" alt="Repo size">
-</p>
-
 > 一个现代化的 Web 应用，用于管理和查看 CBZ 图片档案，提供精美的图集界面。
 
-简体中文 | [English](./README_EN.md)
+## ✨ 为什么选择 NasGallery？
 
-## ✨ 功能特性
+市面上大多数图片管理方案（如 Google Photos、Nextcloud Gallery）主要针对普通照片设计，不适合图集的管理场景。NasGallery 专为图集设计，提供以下差异化能力：
+
+| 功能 | NasGallery | Google Photos | Nextcloud Gallery | Calibre-Web |
+|------|-----------|--------------|-------------------|-------------|
+| CBZ 漫画格式支持 | ✅ 原生解析 | ❌ | ❌ | ❌ |
+| 同人图集元数据（机构/模特/Cosplayer/角色） | ✅ 自动提取 | ❌ | ❌ | ❌ |
+| CLIP 中文语义搜索 | ✅ 纯中文优化 | ❌ | ❌ | ❌ |
+| 定时自动扫描 + AI 向量化 | ✅ | ❌ | ❌ | ❌ |
+| PWA 离线访问 | ✅ | ❌ | ✅ | ❌ |
+| 多级缓存 + 缩略图 | ✅ | ✅ | ✅ | ❌ |
+| Docker 一键部署 | ✅ | ❌ | ✅ | ✅ |
+| 内存自动释放（AI 模型） | ✅ 超时重启进程 | N/A | N/A | N/A |
+
+### 核心优势
+
+**1. 专为图集优化**
+- 支持 CBZ 漫画格式，内嵌 `metadata.json` 自动解析
+- 分类维度：机构（ORG）、模特（Model）、Cosplayer、角色（Character）
+
+**2. 中文语义 AI 搜索**
+- 基于 Chinese-CLIP 模型的以文搜图能力
+- 支持自然语言描述："穿红色连衣裙的女孩"、"海边风景"
+- Intel/NVIDIA GPU 加速，支持 OpenVINO 和 CUDA
+
+**3. 懒加载 + 按需加载**
+- 瀑布流无限滚动，大数据量不卡顿
+- 缩略图预生成 + 多级缓存
+- AI 模型按需加载，空闲 30 分钟自动卸载，重启进程释放内存
+
+**4. 开箱即用的部署**
+- Docker 一键部署，无需手动配置
+- 定时任务自动执行（每天 4:00 扫描 + AI 向量化）
+- 启动时自动执行 Alembic 数据库迁移
+
+## ✨ 核心功能
 
 - 📚 **CBZ 档案管理** - 完整支持 CBZ（Comic Book ZIP）图片压缩包
 - 🖼️ **精美图集画廊** - 响应式瀑布流布局，支持灯箱查看
@@ -29,29 +49,9 @@
 - 📱 **PWA 支持** - 可安装的 Web 应用，支持离线访问
 - 🌙 **深色模式** - 内置主题切换支持
 - 🔐 **安全认证** - 基于 JWT 的身份验证和角色管理
-- 🚀 **自动扫描** - 异步扫描任务，支持断点续传
+- 🚀 **自动扫描** - 异步扫描任务，支持暂停/恢复/中止
 - 🎮 **GPU 加速** - 支持 Intel GPU (OpenVINO) 和 NVIDIA GPU (CUDA) 加速 AI 推理
-- 📊 **扫描进度** - 实时显示扫描进度，支持暂停/恢复
-
-## 🛠️ 技术栈
-
-### 后端
-| 技术 | 描述 |
-|------|------|
-| [FastAPI](https://fastapi.tiangolo.com/) | 现代 Python Web 框架 |
-| [SQLAlchemy](https://www.sqlalchemy.org/) | SQL 工具和 ORM |
-| [Pydantic](https://docs.pydantic.dev/) | 数据验证 |
-| [Pillow](https://python-pillow.org/) | 图片处理 |
-| [ONNX Runtime](https://onnxruntime.ai/) | AI 模型推理引擎 |
-| [Chinese-CLIP](https://github.com/OFA-Sys/Chinese-CLIP) | 中文图文对齐模型 |
-
-### 前端
-| 技术 | 描述 |
-|------|------|
-| [React](https://react.dev/) | UI 库 |
-| [TypeScript](https://www.typescriptlang.org/) | 类型安全 |
-| [Vite](https://vitejs.dev/) | 构建工具 |
-| [TailwindCSS](https://tailwindcss.com/) | 原子化 CSS 框架 |
+- ⏰ **定时扫描** - 每天凌晨 4:00 自动执行文件扫描和 AI 向量化
 
 ## 🚀 快速开始
 
@@ -83,9 +83,6 @@ venv\Scripts\activate     # Windows
 
 # 安装依赖
 pip install -r requirements.txt
-
-# 初始化数据库
-python -c "from app.database import init_db; init_db()"
 
 # （可选）配置环境变量
 cp ../.env.example .env
@@ -137,43 +134,6 @@ npm run dev
 
 3. 将 CBZ 文件放入 `data/images` 目录
 
-### AI 搜索配置（可选）
-
-AI 搜索功能需要额外配置：
-
-1. **下载 Chinese-CLIP 模型**
-
-```bash
-# 创建模型目录
-mkdir -p backend/data/ai_models/chinese-clip
-
-# 下载基础版模型（约 754MB）
-cd backend/data/ai_models/chinese-clip
-wget https://huggingface.co/Xenova/chinese-clip-vit-base-patch16/resolve/main/onnx/model.onnx -O model.onnx
-
-# 下载 tokenizer
-mkdir -p tokenizer
-wget https://huggingface.co/bert-base-chinese/resolve/main/vocab.txt -O tokenizer/vocab.txt
-```
-
-2. **安装 GPU 加速支持（可选）**
-
-```bash
-# Intel GPU (OpenVINO) - 推荐集成显卡
-pip install onnxruntime-openvino
-
-# NVIDIA GPU (CUDA) - 需要 NVIDIA 显卡
-pip install onnxruntime-gpu
-```
-
-3. **初始化 AI 向量**
-
-进入设置页面 → AI 搜索 → 点击"扫描"按钮
-
-4. **使用 AI 搜索**
-
-在搜索框点击 💡 图标切换到 AI 搜索模式，输入自然语言描述即可搜索
-
 ## 📋 图集元数据要求
 
 ### 元数据文件
@@ -203,26 +163,6 @@ pip install onnxruntime-gpu
 | `character` | 否 | 角色名称 |
 | `title` | 是 | 图集标题 |
 | `description` | 否 | 图集描述 |
-
-### 文件命名规范
-
-如果 CBZ 文件内没有 `metadata.json`，系统会尝试从文件名解析元数据。
-
-**命名格式：**
-
-```
-机构名__其他信息__模特名称__页数P.jpg
-```
-
-**示例：**
-
-```
-优衣库__2024.01.15__张三__75P.cbz
-```
-
-解析结果：
-- 组织：`优衣库`
-- 模特：`张三`
 
 ### 目录结构
 
@@ -264,9 +204,7 @@ data/images/
 
 支持的标签关键词：风景,人像,动漫,CG,厚涂,油画,漫画,水彩,国画
 
-## 🔧 配置说明
-
-### 环境变量
+## 🔧 环境变量
 
 | 变量 | 描述 | 默认值 |
 |------|------|--------|
@@ -279,6 +217,66 @@ data/images/
 | `VITE_API_BASE` | API 基础 URL | `http://localhost:8000` |
 | `TAG_KEYWORDS` | 标签关键字（逗号分隔） | 风景,人像,动漫,CG,厚涂,油画,漫画,水彩,国画 |
 
+## 🔄 数据库迁移
+
+项目使用 Alembic 进行数据库版本管理。
+
+```bash
+cd backend
+
+# 生成迁移
+alembic revision --autogenerate -m "描述"
+
+# 应用迁移
+alembic upgrade head
+
+# 回滚迁移
+alembic downgrade -1
+
+# 查看迁移状态
+alembic current
+alembic history
+```
+
+**首次部署：** 应用启动时会自动执行数据库迁移，无需手动操作。
+
+## 🤖 AI 搜索配置（可选）
+
+AI 搜索功能需要额外配置：
+
+1. **下载 Chinese-CLIP 模型**
+
+```bash
+# 创建模型目录
+mkdir -p backend/data/ai_models/chinese-clip
+
+# 下载基础版模型（约 754MB）
+cd backend/data/ai_models/chinese-clip
+wget https://huggingface.co/Xenova/chinese-clip-vit-base-patch16/resolve/main/onnx/model.onnx -O model.onnx
+
+# 下载 tokenizer
+mkdir -p tokenizer
+wget https://huggingface.co/bert-base-chinese/resolve/main/vocab.txt -O tokenizer/vocab.txt
+```
+
+2. **安装 GPU 加速支持（可选）**
+
+```bash
+# Intel GPU (OpenVINO) - 推荐集成显卡
+pip install onnxruntime-openvino
+
+# NVIDIA GPU (CUDA) - 需要 NVIDIA 显卡
+pip install onnxruntime-gpu
+```
+
+3. **初始化 AI 向量**
+
+进入设置页面 → AI 搜索 → 点击"扫描"按钮
+
+4. **使用 AI 搜索**
+
+在搜索框点击 💡 图标切换到 AI 搜索模式，输入自然语言描述即可搜索
+
 ## 🐳 Docker 部署
 
 ```bash
@@ -290,7 +288,7 @@ docker build -t nasgallery .
 docker run -d -p 8000:8000 -v ./data:/app/data nasgallery
 ```
 
-## 项目demo
+## 📁 项目 demo
 
 https://nasgallery.xiaohu777.cn/
 用户名：admin 密码:admin123
