@@ -48,10 +48,10 @@ class TestCurrentUser:
         assert data["email"] == "test@example.com"
     
     def test_get_current_user_unauthorized(self, client):
-        """测试未认证（HTTPBearer 默认返回 403）"""
+        """测试未认证（无凭证时返回 401）"""
         response = client.get("/api/auth/me")
-        # HTTPBearer 在没有凭证时返回 403 Forbidden
-        assert response.status_code == 403
+        # HTTPBearer 在没有凭证时返回 401 Unauthorized
+        assert response.status_code == 401
     
     def test_get_current_user_invalid_token(self, client):
         """测试无效令牌"""
