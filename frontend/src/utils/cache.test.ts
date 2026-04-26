@@ -53,12 +53,12 @@ describe('SessionState', () => {
 describe('CacheKeys', () => {
   it('should generate albums state key', () => {
     const key = CacheKeys.state.albums('org', 1)
-    expect(key).toBe('state:albums:org:1:none')
+    expect(key).toBe('state:albums:org:1:none:default')
   })
 
   it('should generate albums state key with search', () => {
     const key = CacheKeys.state.albums('org', 1, 'test')
-    expect(key).toBe('state:albums:org:1:test')
+    expect(key).toBe('state:albums:org:1:test:default')
   })
 
   it('should generate albums state key with null values', () => {
