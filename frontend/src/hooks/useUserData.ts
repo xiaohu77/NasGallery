@@ -130,8 +130,8 @@ export const useUserData = (): UseUserDataReturn => {
   }, [fetchHistory])
 
   const toggleFavorite = useCallback(async (albumId: string): Promise<boolean> => {
+    const isFav = favorites.some(f => f.id === albumId)
     try {
-      const isFav = favorites.some(f => f.id === albumId)
       if (isFav) {
         await apiClient.delete(`/api/user/favorites/${albumId}`)
         setFavorites(prev => prev.filter(f => f.id !== albumId))

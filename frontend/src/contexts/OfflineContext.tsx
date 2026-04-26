@@ -21,7 +21,6 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // 检查是否为PWA模式
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
     const isStandaloneIOS = (window.navigator as any).standalone === true
     
     setIsPWA(isStandalone || isStandaloneIOS)

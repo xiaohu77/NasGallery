@@ -1,10 +1,6 @@
 import { JSX } from 'react'
 import { Link } from 'react-router-dom'
 
-const API_BASE = import.meta.env.DEV
-  ? (import.meta.env.VITE_API_BASE || 'http://localhost:8000')
-  : window.location.origin
-
 interface AlbumCardProps {
   album: {
     id: string

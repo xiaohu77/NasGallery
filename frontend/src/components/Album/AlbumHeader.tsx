@@ -14,7 +14,7 @@ const API_BASE = import.meta.env.DEV
 
 const AlbumHeader = ({ album, onBack }: AlbumHeaderProps) => {
   const navigate = useNavigate()
-  const { token, isAuthenticated } = useUser()
+  const { token } = useUser()
   const [isFavorited, setIsFavorited] = useState(false)
   const [favoriting, setFavoriting] = useState(false)
 

@@ -14,6 +14,7 @@ export interface ProvidersInfo {
 
 export interface AIStatus {
   available: boolean
+  has_model_files: boolean
   model_info: {
     loaded: boolean
     version: string

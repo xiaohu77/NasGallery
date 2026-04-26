@@ -265,7 +265,6 @@ const Lightbox = ({ isOpen, images, initialIndex, onClose }: LightboxProps) => {
   if (!isOpen) return null
 
   const screenWidth = window.innerWidth
-  const currentImage = images[currentIndex]
 
   return (
     <div className="fixed inset-0 z-50 bg-black">

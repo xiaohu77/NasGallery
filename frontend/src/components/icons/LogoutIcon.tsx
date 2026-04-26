@@ -1,5 +1,3 @@
-import React from 'react'
-
 const LogoutIcon = ({ className = "w-5 h-5" }: { className?: string }): JSX.Element => (
   <svg
     className={className}

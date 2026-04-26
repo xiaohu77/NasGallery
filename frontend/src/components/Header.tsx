@@ -44,7 +44,7 @@ const Header = () => {
     const checkAiStatus = async () => {
       try {
         const status = await aiService.getStatus()
-        setAiEnabled(status.has_model_files || status.stats.embedded_albums > 0)
+        setAiEnabled(status.stats.embedded_albums > 0)
       } catch (e) {
         setAiEnabled(false)
       }
@@ -136,12 +136,12 @@ const Header = () => {
     navigate('/', { replace: true })
   }, [navigate])
 
-  const handleMainTabClick = (tabId: string, path: string) => {
+  const handleMainTabClick = (_tabId: string, path: string) => {
     setActiveSubTab(null)
     navigate(path)
   }
 
-  const handleSubTabClick = (subId: string, subName?: string) => {
+  const handleSubTabClick = (subId: string, _subName?: string) => {
     // 收藏和历史浏览使用查询参数
     if (subId === 'favorites' || subId === 'history') {
       if (!isAuthenticated) {

@@ -28,6 +28,12 @@ jobs:
       - name: Check Python syntax
         run: python -m py_compile $(find backend -name "*.py")
 
+      - name: Run backend tests
+        run: |
+          cd backend
+          pip install pytest pytest-asyncio httpx
+          pytest tests/ -v --tb=short
+
   frontend-ci:
     runs-on: ubuntu-latest
     steps:
@@ -45,6 +51,9 @@ jobs:
 
       - name: Type check
         run: cd frontend && npx tsc --noEmit
+
+      - name: Run frontend tests
+        run: cd frontend && npm test -- --run
 
       - name: Build
         run: cd frontend && npm run build

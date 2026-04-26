@@ -28,7 +28,7 @@ const Home = (): JSX.Element => {
   const { id } = useParams<{ id?: string }>()
   const location = useLocation()
   const navigate = useNavigate()
-  const mainRef = useRef<HTMLDivElement>(null)
+  const mainRef = useRef<HTMLDivElement | null>(null)
   const { isAuthenticated } = useUser()
   
   const [pwaService] = useState(() => new PWAService())
@@ -56,9 +56,7 @@ const Home = (): JSX.Element => {
     favoritesLoading,
     historyLoading,
     hasMoreFavorites,
-    hasMoreHistory,
-    loadMoreFavorites,
-    loadMoreHistory
+    hasMoreHistory
   } = useUserData()
   
   // 滑动切换分类
@@ -144,14 +142,13 @@ const Home = (): JSX.Element => {
     albums,
     loading,
     error,
-    page,
     hasMore,
     isLoadingMore,
     loadMore,
     refresh,
     scrollPosition,
     saveScrollPosition
-  } = useAlbums(categoryType, categoryId, pwaService, query, sort)
+  } = useAlbums(categoryType, categoryId as number | null, pwaService, query, sort || undefined)
 
   // 懒加载观察器
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -244,31 +241,16 @@ const Home = (): JSX.Element => {
   // 滚动位置恢复 - 使用 ref 直接恢复，避免状态变化触发重渲染
   const hasRestoredScroll = useRef(false)
   const hasRestoredAiSearch = useRef(false)
-  const restoreScrollRef = useCallback((node: HTMLDivElement | null) => {
+  const _restoreScrollRef = useCallback((node: HTMLDivElement | null) => {
     if (node && scrollPosition > 0 && !hasRestoredScroll.current) {
       hasRestoredScroll.current = true
       // 使用 requestAnimationFrame 确保 DOM 布局完成
       requestAnimationFrame(() => {
-        node.scrollTop = scrollPosition
+        if (node) node.scrollTop = scrollPosition
       })
     }
     mainRef.current = node
   }, [scrollPosition])
-
-  // 保存 AI 搜索状态到 sessionStorage
-  const saveAiSearchState = useCallback((results: AISearchResult[], page: number, hasMore: boolean, searchQuery: string) => {
-    try {
-      sessionStorage.setItem('ai_search_state', JSON.stringify({
-        results,
-        page,
-        hasMore,
-        query: searchQuery,
-        timestamp: Date.now()
-      }))
-    } catch (e) {
-      console.warn('保存 AI 搜索状态失败:', e)
-    }
-  }, [])
 
   // 恢复 AI 搜索状态从 sessionStorage
   const restoreAiSearchState = useCallback((searchQuery: string): boolean => {
@@ -402,7 +384,7 @@ const Home = (): JSX.Element => {
   )
 
   return (
-    <div className="py-4 px-4 sm:px-6 lg:px-8 hide-scrollbar" ref={restoreScrollRef} onScroll={handleScroll} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div className="py-4 px-4 sm:px-6 lg:px-8 hide-scrollbar" ref={_restoreScrollRef} onScroll={handleScroll} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {/* 搜索模式提示 */}
       {mode === 'ai' && query && (
         <div className="mb-4 text-center">

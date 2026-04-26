@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, ReactNode } from 'react';
+import React, { useEffect, ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 
 interface KeepAliveProps {
@@ -12,8 +12,7 @@ interface KeepAliveProps {
  */
 export const KeepAlive: React.FC<KeepAliveProps> = ({ children, name }) => {
   const location = useLocation();
-  const cacheRef = useRef<Map<string, any>>(new Map());
-  const activeKeyRef = useRef<string>('');
+  const activeKeyRef = React.useRef<string>('');
 
   // 生成当前路径的唯一标识
   const getKey = () => {
@@ -23,23 +22,13 @@ export const KeepAlive: React.FC<KeepAliveProps> = ({ children, name }) => {
   // 获取当前激活的key
   const activeKey = getKey();
 
-  // 保存组件状态到缓存
-  const saveState = (key: string, state: any) => {
-    cacheRef.current.set(key, state);
-  };
-
-  // 从缓存恢复组件状态
-  const restoreState = (key: string) => {
-    return cacheRef.current.get(key);
-  };
-
   // 当路径变化时，检查是否需要恢复状态
   useEffect(() => {
     // 如果是同一个组件但不同路径，或者从详情页返回
     if (activeKeyRef.current && activeKey !== activeKeyRef.current) {
       // 可以在这里处理状态保存逻辑
     }
-    
+
     activeKeyRef.current = activeKey;
   }, [activeKey]);
 

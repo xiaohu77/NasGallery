@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { PWAService } from '../services/pwaService'
-import { aiService, AIStatus, ScanTaskStatus as AIScanTaskStatus } from '../services/aiService'
-import type { ScanStats, OrphanStats, ScanTaskStatus } from '../types/album'
+import { aiService, AIStatus, ScanTaskStatus as AIScanStatus } from '../services/aiService'
+import type { ScanStats, OrphanStats } from '../types/album'
 import CloseIcon from '../components/icons/CloseIcon'
 
 // 获取当前使用的 GPU 名称
@@ -90,18 +90,20 @@ const SettingRow = ({
 )
 
 // 按钮组件
-const ActionButton = ({ 
-  onClick, 
+const ActionButton = ({
+  onClick,
   loading,
   disabled,
   variant = 'primary',
-  children 
-}: { 
+  className = '',
+  children
+}: {
   onClick: () => void
   loading?: boolean
   disabled?: boolean
   variant?: 'primary' | 'danger'
-  children: React.ReactNode 
+  className?: string
+  children: React.ReactNode
 }) => {
   const base = "px-4 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1.5 active:scale-95"
   const styles = variant === 'primary'
@@ -109,7 +111,7 @@ const ActionButton = ({
     : `${base} bg-red-500/10 text-red-500 hover:bg-red-500/20`
 
   return (
-    <button onClick={onClick} disabled={loading || disabled} className={`${styles} disabled:opacity-50`}>
+    <button onClick={onClick} disabled={loading || disabled} className={`${styles} ${className} disabled:opacity-50`}>
       {loading ? <LoadingSpinner className="w-3.5 h-3.5" /> : children}
     </button>
   )
@@ -185,7 +187,7 @@ const Settings = (): JSX.Element => {
   } | null>(null)
   const [pwaService] = useState(() => new PWAService())
   const [aiStatus, setAiStatus] = useState<AIStatus | null>(null)
-  const [aiTaskStatus, setAiTaskStatus] = useState<AIScanTaskStatus | null>(null)
+  const [aiTaskStatus, setAiTaskStatus] = useState<AIScanStatus | null>(null)
   const [selectedProvider, setSelectedProvider] = useState<string>('')
   const [scanProgress, setScanProgress] = useState<{
     status: 'idle' | 'running' | 'completed' | 'failed'
