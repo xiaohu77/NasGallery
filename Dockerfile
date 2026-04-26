@@ -1,3 +1,14 @@
+# ==================== 前端构建阶段 ====================
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app
+
+COPY frontend/package*.json ./
+RUN npm ci
+
+COPY frontend/ ./
+RUN npm run build
+
 # ==================== 后端构建阶段 ====================
 FROM python:3.11-slim AS backend-builder
 
@@ -53,7 +64,7 @@ COPY --from=backend-builder /app/run.py ./
 COPY --from=backend-builder /app/.env.example ./
 
 # 复制前端构建产物到后端静态目录
-COPY frontend/dist ./app/static
+COPY --from=frontend-builder /app/dist ./app/static
 
 # 创建必要的目录
 RUN mkdir -p /app/data/images /app/data/tmp/cache /app/data/tmp/covers
