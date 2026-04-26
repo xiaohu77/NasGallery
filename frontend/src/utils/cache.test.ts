@@ -63,7 +63,7 @@ describe('CacheKeys', () => {
 
   it('should generate albums state key with null values', () => {
     const key = CacheKeys.state.albums(null, null)
-    expect(key).toBe('state:albums:all:all:none')
+    expect(key).toBe('state:albums:all:all:none:default')
   })
 
   it('should generate album detail state key', () => {
