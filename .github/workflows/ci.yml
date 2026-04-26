@@ -32,6 +32,7 @@ jobs:
         run: |
           cd backend
           pip install pytest pytest-asyncio httpx --upgrade --no-cache-dir --index-url https://pypi.org/simple/
+          pip install "fastapi>=0.109.0" --upgrade --no-cache-dir --index-url https://pypi.org/simple/
           pytest tests/ -v --tb=short
 
   frontend-ci:
