@@ -63,6 +63,7 @@ const Home = (): JSX.Element => {
   const touchStartX = useRef(0)
   const mainTabs = [
     { path: '/' },
+    { path: '/random' },
     { path: '/org' },
     { path: '/model' },
     { path: '/cosplayer' },
@@ -71,10 +72,11 @@ const Home = (): JSX.Element => {
   
   const getCurrentTabIndex = useCallback(() => {
     const path = location.pathname
-    if (path.startsWith('/org')) return 1
-    if (path.startsWith('/model')) return 2
-    if (path.startsWith('/cosplayer')) return 3
-    if (path.startsWith('/character')) return 4
+    if (path.startsWith('/random')) return 1
+    if (path.startsWith('/org')) return 2
+    if (path.startsWith('/model')) return 3
+    if (path.startsWith('/cosplayer')) return 4
+    if (path.startsWith('/character')) return 5
     return 0
   }, [location.pathname])
   
@@ -120,7 +122,9 @@ const Home = (): JSX.Element => {
   const getCategoryInfo = useCallback(() => {
     const path = location.pathname
     
-    if (path === '/org' || path.startsWith('/org/')) {
+    if (path === '/random') {
+      return { type: 'random' as const, categoryId: null }
+    } else if (path === '/org' || path.startsWith('/org/')) {
       return { type: 'org' as const, categoryId: path.includes('/org/') ? parseInt(id || '0') : null }
     } else if (path === '/model' || path.startsWith('/model/')) {
       return { type: 'model' as const, categoryId: path.includes('/model/') ? parseInt(id || '0') : null }

@@ -82,7 +82,7 @@ function albumsReducer(state: AlbumsState, action: AlbumsAction): AlbumsState {
 }
 
 export const useAlbums = (
-  categoryType: 'org' | 'model' | 'cosplayer' | 'character' | 'tag' | null,
+  categoryType: 'org' | 'model' | 'cosplayer' | 'character' | 'tag' | 'random' | null,
   categoryId: number | null,
   pwaService: PWAService,
   searchQuery?: string,
@@ -118,15 +118,17 @@ export const useAlbums = (
   const fetchData = useCallback(async (pageNum: number) => {
     try {
       let response;
-      const sortParam = sort || undefined
-      if (categoryType && !categoryId) {
-        response = await pwaService.getAlbums(pageNum, 20, categoryType, sortParam);
+      const effectiveSort = categoryType === 'random' ? 'random' : (sort || undefined);
+      if (categoryType === 'random') {
+        response = await pwaService.getAlbums(pageNum, 20, undefined, effectiveSort);
+      } else if (categoryType && !categoryId) {
+        response = await pwaService.getAlbums(pageNum, 20, categoryType, effectiveSort);
       } else if (categoryType && categoryId) {
         response = await pwaService.getAlbumsByCategory(categoryType, categoryId, pageNum, 20);
       } else if (searchQuery) {
         response = await pwaService.searchAlbums(searchQuery, pageNum, 20);
       } else {
-        response = await pwaService.getAlbums(pageNum, 20, undefined, sortParam);
+        response = await pwaService.getAlbums(pageNum, 20, undefined, effectiveSort);
       }
       return response;
     } catch (err) {
@@ -164,15 +166,17 @@ export const useAlbums = (
     dispatch({ type: 'REFRESH' });
     try {
       let response;
-      const sortParam = sort || undefined
-      if (categoryType && !categoryId) {
-        response = await pwaService.refreshAlbums(1, 20, categoryType, sortParam);
+      const effectiveSort = categoryType === 'random' ? 'random' : (sort || undefined);
+      if (categoryType === 'random') {
+        response = await pwaService.refreshAlbums(1, 20, undefined, effectiveSort);
+      } else if (categoryType && !categoryId) {
+        response = await pwaService.refreshAlbums(1, 20, categoryType, effectiveSort);
       } else if (categoryType && categoryId) {
         response = await pwaService.refreshAlbumsByCategory(categoryType, categoryId, 1, 20);
       } else if (searchQuery) {
         response = await pwaService.searchAlbums(searchQuery, 1, 20);
       } else {
-        response = await pwaService.refreshAlbums(1, 20, undefined, sortParam);
+        response = await pwaService.refreshAlbums(1, 20, undefined, effectiveSort);
       }
       const newAlbums = response.items.map(transformAlbum);
       const hasMoreData = response.page * response.size < response.total;

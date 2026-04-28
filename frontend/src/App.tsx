@@ -21,6 +21,7 @@ const HomeWrapper = () => {
   const getKey = () => {
     const path = location.pathname;
     if (path === '/') return 'home-all';
+    if (path === '/random') return 'home-random';
     if (path === '/org') return 'home-org';
     if (path === '/model') return 'home-model';
     if (path === '/cosplayer') return 'home-cosplayer';
@@ -86,6 +87,7 @@ function App(): JSX.Element {
               }
             >
               <Route index element={<HomeWrapper />} />
+              <Route path="/random" element={<HomeWrapper />} />
               <Route path="/org" element={<HomeWrapper />} />
               <Route path="/org/:id" element={<HomeWrapper />} />
               <Route path="/model" element={<HomeWrapper />} />

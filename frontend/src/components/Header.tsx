@@ -15,6 +15,7 @@ interface SubCategory {
 
 const mainTabs = [
   { id: 'all', label: '所有图集', path: '/' },
+  { id: 'random', label: '随机图集', path: '/random' },
   { id: 'org', label: '刊物', path: '/org' },
   { id: 'model', label: '人物', path: '/model' },
   { id: 'cosplayer', label: 'Cosplayer', path: '/cosplayer' },
@@ -65,7 +66,10 @@ const Header = () => {
     const path = location.pathname
     const params = new URLSearchParams(location.search)
     
-    if (path.startsWith('/org')) {
+    if (path.startsWith('/random')) {
+      setActiveMainTab('random')
+      setActiveSubTab(null)
+    } else if (path.startsWith('/org')) {
       setActiveMainTab('org')
       const orgId = path.split('/')[2]
       setActiveSubTab(orgId || null)

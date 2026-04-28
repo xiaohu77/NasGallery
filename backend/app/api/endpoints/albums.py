@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from typing import List, Optional
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
@@ -104,7 +104,16 @@ async def get_albums(
         query = query.join(Album.tags).filter(Tag.type == tag_type)
     
     # 排序方式
-    if sort == 'popular':
+    if sort == 'random':
+        # 随机顺序 - 使用数据库随机函数
+        if db.bind.dialect.name == 'sqlite':
+            query = query.order_by(func.random())
+        elif db.bind.dialect.name == 'postgresql':
+            query = query.order_by(func.random())
+        else:
+            # MySQL 等其他数据库
+            query = query.order_by(func.rand())
+    elif sort == 'popular':
         # 浏览最多 - 按浏览量降序
         query = query.order_by(Album.view_count.desc().nullslast(), Album.created_at.desc())
     elif sort == 'recent':
