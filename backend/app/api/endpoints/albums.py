@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.database import get_db
 from app.models import Album, AlbumTag, Tag, User, Organization, Model
@@ -433,7 +433,7 @@ async def refresh_album(
     metadata = extract_cbz_metadata(cbz_path)
     album.image_count = metadata['image_count']
     album.cover_image = metadata['cover_image']
-    album.updated_at = datetime.utcnow()
+    album.updated_at = datetime.now(timezone.utc)
     
     db.commit()
     

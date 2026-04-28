@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
@@ -241,7 +241,7 @@ class DatabaseUpdater:
                     cover_image=metadata['cover_image'],
                     file_size=file_size,
                     album_type=album_type,
-                    last_scan_time=datetime.utcnow(),
+                    last_scan_time=datetime.now(timezone.utc),
                     is_active=1
                 )
                 self.db.add(album)
@@ -257,8 +257,8 @@ class DatabaseUpdater:
                 album.cover_image = metadata['cover_image']
                 album.file_size = file_size
                 album.album_type = album_type
-                album.updated_at = datetime.utcnow()
-                album.last_scan_time = datetime.utcnow()
+                album.updated_at = datetime.now(timezone.utc)
+                album.last_scan_time = datetime.now(timezone.utc)
                 album.is_active = 1  # 恢复已删除的图集
                 self.scan_logger.results['updated_albums'] += 1
                 self.scan_logger.log_updated_file(album_path.name)

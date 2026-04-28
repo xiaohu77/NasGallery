@@ -1,7 +1,7 @@
 import logging
 import uuid
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Dict, Any, Callable
 from sqlalchemy.orm import Session
@@ -95,7 +95,7 @@ class EmbeddingScanner:
         task = AIScanTask(
             task_id=task_id,
             status='pending',
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
         db.add(task)
         db.commit()
@@ -120,7 +120,7 @@ class EmbeddingScanner:
                 return
             
             task.status = 'running'
-            task.started_at = datetime.utcnow()
+            task.started_at = datetime.now(timezone.utc)
             db.commit()
             
             # 获取需要处理的图集
@@ -188,7 +188,7 @@ class EmbeddingScanner:
                             album_id=album_id,
                             embedding=embedding.tobytes(),
                             model_version=clip_service.model_version,
-                            created_at=datetime.utcnow()
+                            created_at=datetime.now(timezone.utc)
                         )
                         db.add(album_embedding)
                         db.commit()
@@ -226,7 +226,7 @@ class EmbeddingScanner:
             task.status = 'completed'
             task.processed_albums = processed
             task.failed_albums = failed
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(timezone.utc)
             db.commit()
             
             await self._notify_progress(task_id, {
@@ -249,7 +249,7 @@ class EmbeddingScanner:
             if task:
                 task.status = 'failed'
                 task.error_message = str(e)
-                task.completed_at = datetime.utcnow()
+                task.completed_at = datetime.now(timezone.utc)
                 db.commit()
             
             await self._notify_progress(task_id, {

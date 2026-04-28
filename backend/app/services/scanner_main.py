@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 from typing import Dict, Callable, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from ..models import Album, AlbumTag, Tag, Organization, Model
@@ -14,7 +14,7 @@ class ScanLogger:
     """扫描日志管理器"""
     
     def __init__(self):
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(timezone.utc)
         self.results = {
             'scanned_files': 0,
             'new_albums': 0,
@@ -63,7 +63,7 @@ class ScanLogger:
         logger.debug(f"🔍 调试: {message}")
     
     def get_summary(self) -> Dict:
-        duration = (datetime.utcnow() - self.start_time).total_seconds()
+        duration = (datetime.now(timezone.utc) - self.start_time).total_seconds()
         summary = {
             'duration_seconds': round(duration, 2),
             'results': self.results,
@@ -451,7 +451,7 @@ class ScheduledScanner:
         while self._running:
             try:
                 # 计算距离下次4点的时间
-                now = datetime.now()
+                now = datetime.now(timezone.utc)
                 next_run = now.replace(hour=4, minute=0, second=0, microsecond=0)
                 if now.hour >= 4:
                     next_run += timedelta(days=1)
@@ -461,7 +461,7 @@ class ScheduledScanner:
                 time.sleep(min(delay, 60))  # 每分钟检查一次
 
                 # 检查是否到达4点
-                now = datetime.now()
+                now = datetime.now(timezone.utc)
                 if now.hour == 4 and now.minute < 5:  # 4:00-4:04 期间执行
                     self._execute_scheduled_scan()
                     time.sleep(300)  # 执行后等待5分钟，避免重复执行

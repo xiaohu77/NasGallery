@@ -159,7 +159,7 @@ def _run_scan_task(task_id: str, scan_path: Path, full_scan: bool):
         
         # 更新状态为运行中
         task.status = 'running'
-        task.started_at = datetime.utcnow()
+        task.started_at = datetime.now(timezone.utc)
         db.commit()
         
         # 进度回调（使用独立会话更新数据库，使用事件循环通知 SSE）
@@ -182,7 +182,7 @@ def _run_scan_task(task_id: str, scan_path: Path, full_scan: bool):
         task.processed_files = results['results']['scanned_files']
         task.new_albums = results['results']['new_albums']
         task.updated_albums = results['results']['updated_albums']
-        task.completed_at = datetime.utcnow()
+        task.completed_at = datetime.now(timezone.utc)
         db.commit()
         
         # 通知完成
@@ -205,7 +205,7 @@ def _run_scan_task(task_id: str, scan_path: Path, full_scan: bool):
             if task:
                 task.status = 'failed'
                 task.error_message = str(e)
-                task.completed_at = datetime.utcnow()
+                task.completed_at = datetime.now(timezone.utc)
                 fail_db.commit()
             
             # 通知失败
@@ -276,7 +276,7 @@ async def scan_albums_endpoint(
             task_id=task_id,
             status='pending',
             scan_type='full' if full_scan else 'incremental',
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
         db.add(task)
         db.commit()
@@ -482,7 +482,7 @@ async def cancel_scan(db: Session = Depends(get_db)):
     
     task.status = 'failed'
     task.error_message = '用户取消'
-    task.completed_at = datetime.utcnow()
+    task.completed_at = datetime.now(timezone.utc)
     db.commit()
     
     return {"success": True, "message": "扫描已取消"}
@@ -536,7 +536,7 @@ async def fix_missing_covers(
         status='pending',
         scan_type='fix_covers',
         total_files=result.count,
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
     db.add(task)
     db.commit()
@@ -558,7 +558,7 @@ async def fix_missing_covers(
                 return
             
             task.status = 'running'
-            task.started_at = datetime.utcnow()
+            task.started_at = datetime.now(timezone.utc)
             task_db.commit()
             
             # 创建修复器
@@ -593,7 +593,7 @@ async def fix_missing_covers(
             task.status = 'completed'
             task.processed_files = processed
             task.failed_files = failed
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(timezone.utc)
             task_db.commit()
             
             logger.info(f"封面修复完成: 处理 {processed}, 失败 {failed}")
@@ -604,7 +604,7 @@ async def fix_missing_covers(
             if task:
                 task.status = 'failed'
                 task.error_message = str(e)
-                task.completed_at = datetime.utcnow()
+                task.completed_at = datetime.now(timezone.utc)
                 task_db.commit()
         finally:
             task_db.close()

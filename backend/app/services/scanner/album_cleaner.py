@@ -7,7 +7,7 @@
 - 获取孤儿数据统计信息
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict
 from sqlalchemy.orm import Session
 
@@ -40,7 +40,7 @@ class AlbumCleaner:
             删除的图集数量
         """
         try:
-            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
             
             # 查找已删除且超过保留期限的图集
             albums_to_delete = self.db.query(Album).filter(

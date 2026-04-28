@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Set
 from sqlalchemy.orm import Session
 
@@ -42,7 +42,7 @@ class CacheCleaner:
                 if album.file_path not in existing_files:
                     # 标记为已删除
                     album.is_active = 0
-                    album.updated_at = datetime.utcnow()
+                    album.updated_at = datetime.now(timezone.utc)
                     self.scan_logger.log_deleted_album(album.id, album.title)
                     deleted_count += 1
                     

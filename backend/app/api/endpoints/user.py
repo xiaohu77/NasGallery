@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.database import get_db
 from app.models import User, Album, UserFavorite, UserHistory, AlbumTag, Tag
@@ -168,7 +168,7 @@ async def add_history(
     ).first()
     
     if existing:
-        existing.viewed_at = datetime.utcnow()
+        existing.viewed_at = datetime.now(timezone.utc)
     else:
         history = UserHistory(user_id=current_user.id, album_id=album_id)
         db.add(history)

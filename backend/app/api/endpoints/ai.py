@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 import json
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.database import get_db
 from app.services.ai import embedding_scanner, clip_service
@@ -238,7 +238,7 @@ async def cancel_scan(
     # 更新任务状态为 failed
     target_task.status = 'failed'
     target_task.error_message = '用户手动中止'
-    target_task.completed_at = datetime.utcnow()
+    target_task.completed_at = datetime.now(timezone.utc)
     db.commit()
     
     # 清除内存中的当前任务ID

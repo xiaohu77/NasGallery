@@ -6,7 +6,7 @@
 - 更新统计信息
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -49,7 +49,7 @@ class ScanStats:
             # 按最后扫描时间分组
             recent_scans = self.db.query(Album).filter(
                 Album.is_active == 1,
-                Album.last_scan_time > datetime.utcnow().replace(hour=0, minute=0, second=0)
+                Album.last_scan_time > datetime.now(timezone.utc).replace(hour=0, minute=0, second=0)
             ).count()
             
             return {
