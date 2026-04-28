@@ -457,7 +457,6 @@ class ScheduledScanner:
                     next_run += timedelta(days=1)
                 delay = (next_run - now).total_seconds()
 
-                logger.info(f"定时扫描: 下次执行时间 {next_run.strftime('%Y-%m-%d %H:%M:%S')}，距离 {delay/3600:.1f} 小时")
                 time.sleep(min(delay, 60))  # 每分钟检查一次
 
                 # 检查是否到达4点
