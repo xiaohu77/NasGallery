@@ -2,7 +2,7 @@ import json
 import shutil
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from cachetools import TTLCache, LRUCache
 import threading
 import time
@@ -69,8 +69,8 @@ class CacheService:
         try:
             # 检查是否过期
             stat = cache_file.stat()
-            file_time = datetime.fromtimestamp(stat.st_mtime)
-            if datetime.now() - file_time > self.image_list_ttl:
+            file_time = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+            if datetime.now(timezone.utc) - file_time > self.image_list_ttl:
                 cache_file.unlink()
                 return None
             
@@ -88,7 +88,7 @@ class CacheService:
         try:
             data = {
                 'images': images,
-                'cached_at': datetime.now().isoformat()
+                'cached_at': datetime.now(timezone.utc).isoformat()
             }
             # 保存到文件
             with open(cache_file, 'w', encoding='utf-8') as f:
@@ -161,8 +161,8 @@ class CacheService:
             cache_file = cache_dir / ".cache_info"
             if cache_file.exists():
                 stat = cache_file.stat()
-                file_time = datetime.fromtimestamp(stat.st_mtime)
-                if datetime.now() - file_time > self.extracted_image_ttl:
+                file_time = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+                if datetime.now(timezone.utc) - file_time > self.extracted_image_ttl:
                     # 缓存过期，清理目录
                     for file in cache_dir.iterdir():
                         if file.is_file():
@@ -188,7 +188,7 @@ class CacheService:
         cache_file = cache_dir / ".cache_info"
         try:
             with open(cache_file, 'w') as f:
-                f.write(datetime.now().isoformat())
+                f.write(datetime.now(timezone.utc).isoformat())
         except Exception as e:
             print(f"标记缓存完成失败: {e}")
     
@@ -205,8 +205,8 @@ class CacheService:
         try:
             # 检查缓存是否过期
             stat = cache_file.stat()
-            file_time = datetime.fromtimestamp(stat.st_mtime)
-            if datetime.now() - file_time > self.extracted_image_ttl:
+            file_time = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+            if datetime.now(timezone.utc) - file_time > self.extracted_image_ttl:
                 return False
             
             # 检查是否有图片文件
@@ -233,8 +233,8 @@ class CacheService:
             
             # 检查是否过期
             stat = cache_file.stat()
-            file_time = datetime.fromtimestamp(stat.st_mtime)
-            if datetime.now() - file_time > self.metadata_ttl:
+            file_time = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+            if datetime.now(timezone.utc) - file_time > self.metadata_ttl:
                 cache_file.unlink()
                 return None
             
@@ -255,7 +255,7 @@ class CacheService:
         try:
             data = {
                 **metadata,
-                'cached_at': datetime.now().isoformat()
+                'cached_at': datetime.now(timezone.utc).isoformat()
             }
             with open(cache_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
@@ -270,14 +270,14 @@ class CacheService:
     def cleanup_expired(self):
         """清理过期的缓存"""
         with self.cleanup_lock:
-            current_time = datetime.now()
+            current_time = datetime.now(timezone.utc)
             cleaned_count = 0
             
             # 清理图片列表缓存
             for cache_file in self.image_lists_dir.glob("*.json"):
                 try:
                     stat = cache_file.stat()
-                    file_time = datetime.fromtimestamp(stat.st_mtime)
+                    file_time = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
                     if current_time - file_time > self.image_list_ttl:
                         cache_file.unlink()
                         cleaned_count += 1
@@ -290,7 +290,7 @@ class CacheService:
                     for image_file in album_dir.iterdir():
                         try:
                             stat = image_file.stat()
-                            file_time = datetime.fromtimestamp(stat.st_mtime)
+                            file_time = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
                             if current_time - file_time > self.extracted_image_ttl:
                                 image_file.unlink()
                                 cleaned_count += 1
@@ -305,7 +305,7 @@ class CacheService:
             for cache_file in self.metadata_dir.glob("*.json"):
                 try:
                     stat = cache_file.stat()
-                    file_time = datetime.fromtimestamp(stat.st_mtime)
+                    file_time = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
                     if current_time - file_time > self.metadata_ttl:
                         cache_file.unlink()
                         cleaned_count += 1

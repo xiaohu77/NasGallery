@@ -3,7 +3,7 @@ AI 相关模型
 """
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, LargeBinary
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .base import Base
 
@@ -16,7 +16,7 @@ class AlbumEmbedding(Base):
     album_id = Column(Integer, ForeignKey('albums.id'), unique=True, nullable=False)
     embedding = Column(LargeBinary, nullable=False)  # 512维 float32 向量 = 2048 bytes
     model_version = Column(String, default='clip-v1')
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     # 关联
     album = relationship("Album", backref="embedding")
@@ -38,7 +38,7 @@ class AIScanTask(Base):
     error_message = Column(String)
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     def __repr__(self):
         return f"<AIScanTask(task_id='{self.task_id}', status='{self.status}')>"

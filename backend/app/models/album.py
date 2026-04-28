@@ -3,7 +3,7 @@
 """
 from sqlalchemy import Column, Integer, String, DateTime, BigInteger, ForeignKey, Index
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .base import Base
 
@@ -14,7 +14,7 @@ class AlbumTag(Base):
     
     album_id = Column(Integer, ForeignKey('albums.id'), primary_key=True)
     tag_id = Column(Integer, ForeignKey('tags.id'), primary_key=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     # 添加索引
     __table_args__ = (
@@ -40,8 +40,8 @@ class Album(Base):
     file_size = Column(BigInteger)
     view_count = Column(Integer, default=0)  # 浏览次数
     album_type = Column(String, default='cbz')  # 'cbz' 或 'folder'
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
     last_scan_time = Column(DateTime)
     is_active = Column(Integer, default=1)  # 1=有效，0=已删除
     

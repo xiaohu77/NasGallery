@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -10,6 +11,13 @@ class Settings(BaseSettings):
     APP_NAME: str = "NasGallery API"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = True
+    
+    # 时区配置
+    TIMEZONE: str = "Asia/Shanghai"
+    
+    @property
+    def timezone(self) -> ZoneInfo:
+        return ZoneInfo(self.TIMEZONE)
     
     # 路径配置
     BASE_DIR: Path = Path(__file__).parent.parent

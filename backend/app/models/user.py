@@ -2,7 +2,7 @@
 用户相关模型
 """
 from sqlalchemy import Column, Integer, String, DateTime
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .base import Base
 
@@ -17,8 +17,8 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Integer, default=1)  # 1=激活，0=禁用
     is_admin = Column(Integer, default=0)   # 1=管理员，0=普通用户
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
     
     def __repr__(self):
         return f"<User(username='{self.username}', is_admin={self.is_admin})>"

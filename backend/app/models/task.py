@@ -2,7 +2,7 @@
 任务相关模型
 """
 from sqlalchemy import Column, Integer, String, DateTime
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .base import Base
 
@@ -24,7 +24,7 @@ class ScanTask(Base):
     error_message = Column(String)
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     def __repr__(self):
         return f"<ScanTask(task_id='{self.task_id}', status='{self.status}')>"

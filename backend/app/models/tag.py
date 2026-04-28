@@ -3,7 +3,7 @@
 """
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .base import Base
 
@@ -17,7 +17,7 @@ class Tag(Base):
     type = Column(String, index=True)  # 'org', 'model', 'cosplayer', 'character', 'tag'
     description = Column(String)
     album_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     def __repr__(self):
         return f"<Tag(name='{self.name}', type='{self.type}')>"
@@ -33,7 +33,7 @@ class Organization(Base):
     tag_id = Column(Integer, ForeignKey('tags.id'), unique=True)
     album_count = Column(Integer, default=0)
     cover_url = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     # 关联
     tag = relationship("Tag", backref="organization")
@@ -52,7 +52,7 @@ class Model(Base):
     tag_id = Column(Integer, ForeignKey('tags.id'), unique=True)
     album_count = Column(Integer, default=0)
     cover_url = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     # 关联
     tag = relationship("Tag", backref="model")
