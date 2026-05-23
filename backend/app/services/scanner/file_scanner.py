@@ -3,7 +3,7 @@ import os
 import logging
 from pathlib import Path
 from typing import List, Set, Tuple, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +178,7 @@ class FileScanner:
             file_stat = cbz_file.stat()
             file_mtime = file_stat.st_mtime
             file_size = file_stat.st_size
-            file_mtime_dt = datetime.fromtimestamp(file_mtime)
+            file_mtime_dt = datetime.fromtimestamp(file_mtime, tz=timezone.utc)
             
             # 查询数据库中的专辑
             album = db.query(Album).filter(
@@ -209,7 +209,7 @@ class FileScanner:
             # 获取文件夹信息（使用文件夹的修改时间）
             folder_stat = folder_stat = folder_path.stat()
             folder_mtime = folder_stat.st_mtime
-            folder_mtime_dt = datetime.fromtimestamp(folder_mtime)
+            folder_mtime_dt = datetime.fromtimestamp(folder_mtime, tz=timezone.utc)
             
             # 计算文件夹中图片的总大小
             total_size = 0

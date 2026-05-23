@@ -9,7 +9,7 @@ import asyncio
 import uuid
 import logging
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.database import get_db, SessionLocal
 from app.models import User, ScanTask, Album
